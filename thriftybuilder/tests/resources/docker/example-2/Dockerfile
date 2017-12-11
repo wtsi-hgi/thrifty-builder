@@ -1,6 +1,5 @@
 # Comment
-
-FROM ubuntu
+FROM ubuntu:16.04
 
 ADD . /test
 

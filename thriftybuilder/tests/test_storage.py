@@ -45,12 +45,12 @@ class _TestStorage(unittest.TestCase, metaclass=ABCMeta):
 
     def test_set_when_not_set(self):
         self.storage.set_checksum(EXAMPLE_CONFIGURATION_ID, EXAMPLE_CHECKSUM)
-        self.assertEqual(EXAMPLE_CHECKSUM, self.storage.get_checksum(EXAMPLE_CONFIGURATION_ID))
+        self.assertEqual({EXAMPLE_CONFIGURATION_ID: EXAMPLE_CHECKSUM}, self.storage.get_all())
 
     def test_set_when_set(self):
         self.storage.set_checksum(EXAMPLE_CONFIGURATION_ID, "old")
         self.storage.set_checksum(EXAMPLE_CONFIGURATION_ID, EXAMPLE_CHECKSUM)
-        self.assertEqual(EXAMPLE_CHECKSUM, self.storage.get_checksum(EXAMPLE_CONFIGURATION_ID))
+        self.assertEqual({EXAMPLE_CONFIGURATION_ID: EXAMPLE_CHECKSUM}, self.storage.get_all())
 
 
 class TestMemoryStorage(_TestStorage):

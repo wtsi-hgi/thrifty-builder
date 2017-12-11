@@ -1,11 +1,11 @@
 import dockerfile
 import hashlib
+import itertools
 import os
 from abc import abstractmethod, ABCMeta
 from glob import glob
-from typing import List, Iterable, Set
+from typing import List, Iterable, Set, Optional
 
-import itertools
 from checksumdir import dirhash
 from zgitignore import ZgitIgnore
 
@@ -16,23 +16,23 @@ _ADD_DOCKER_COMMAND = "add"
 _COPY_DOCKER_COMMAND = "copy"
 _DOCKER_IGNORE_FILE = ".dockerignore"
 
-_TEXT_ENCODING = "utf-8"
-
 
 class BuildConfiguration(metaclass=ABCMeta):
     """
     TODO
     """
+    @property
     @abstractmethod
-    def get_dependent_images(self) -> List[str]:
+    def dependent_images(self) -> List[str]:
         """
         TODO
         :param build_configuration:
         :return:
         """
 
+    @property
     @abstractmethod
-    def get_used_files(self) -> List[str]:
+    def used_files(self) -> List[str]:
         """
         TODO
         :param build_configuration:
@@ -52,23 +52,17 @@ class DockerBuildConfiguration(BuildConfiguration):
     TODO
     """
     @property
-    def dockerfile_location(self) -> str:
+    def dockerfile_location(self) -> Optional[str]:
         return self._dockerfile_location
 
-    def __init__(self, dockerfile_location: str):
-        """
-        TODO
-        :param dockerfile_location:
-        """
-        self._dockerfile_location = dockerfile_location
-        self.commands = dockerfile.parse_file(self.dockerfile_location)
-
-    def get_dependent_images(self) -> List[str]:
+    @property
+    def dependent_images(self) -> List[str]:
         for command in self.commands:
             if command.cmd == _FROM_DOCKER_COMMAND:
                 return command.value
 
-    def get_used_files(self) -> Iterable[str]:
+    @property
+    def used_files(self) -> Iterable[str]:
         """
         Note: does not support adding URLs.
         """
@@ -82,7 +76,7 @@ class DockerBuildConfiguration(BuildConfiguration):
         # https://docs.docker.com/engine/reference/builder/#dockerignore-file
         ignored_checker = ZgitIgnore(self.get_ignored_files())
         files: List[str] = []
-        for source_path in itertools.chain(*(glob(file, recursive=True) for file in source_patterns)):
+        for source_path in source_patterns:
             full_source_path = os.path.normpath(os.path.join(os.path.dirname(self.dockerfile_location), source_path))
             if os.path.isdir(full_source_path):
                 candidate_files = glob(f"{full_source_path}/**/*", recursive=True)
@@ -90,15 +84,22 @@ class DockerBuildConfiguration(BuildConfiguration):
                 candidate_files = [full_source_path]
 
             for file in candidate_files:
-                if not ignored_checker.is_ignored(file):
+                if not os.path.isdir(file) and not ignored_checker.is_ignored(file):
                     files.append(file)
 
         return files
 
+    def __init__(self, dockerfile_location: str):
+        """
+        TODO
+        :param dockerfile_location:
+        """
+        self._dockerfile_location = dockerfile_location
+        self.commands = dockerfile.parse_file(self.dockerfile_location)
+
     def get_checksum(self) -> str:
         """
         Note: does not consider file metadata when calculating checksum.
-        :return:
         """
         return hashlib.md5(self.get_configuration_checksum() + self.get_used_files_checksum()).hexdigest()
 
@@ -109,7 +110,7 @@ class DockerBuildConfiguration(BuildConfiguration):
         """
         hash_accumulator = hashlib.md5()
         for command in self.commands:
-            hash_accumulator.update(command.original.encode(_TEXT_ENCODING))
+            hash_accumulator.update(command.original.encode(DEFAULT_ENCODING))
         return hash_accumulator.hexdigest().encode(DEFAULT_ENCODING)
 
     def get_used_files_checksum(self) -> str:
@@ -118,7 +119,7 @@ class DockerBuildConfiguration(BuildConfiguration):
         :return:
         """
         hash_accumulator = hashlib.md5()
-        for file_path in sorted(self.get_used_files()):
+        for file_path in sorted(self.used_files):
             if os.path.isdir(file_path):
                 hash_accumulator.update(dirhash(file_path).encode(DEFAULT_ENCODING))
             else:
