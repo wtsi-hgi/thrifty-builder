@@ -1,5 +1,6 @@
 import json
 from abc import ABCMeta, abstractmethod
+from copy import copy
 from typing import Optional, Dict
 
 import os
@@ -9,6 +10,13 @@ class Storage(metaclass=ABCMeta):
     """
     TODO
     """
+    @abstractmethod
+    def get_all(self) -> Dict[str, str]:
+        """
+        TODO
+        :return:
+        """
+
     @abstractmethod
     def get_checksum(self, configuration_id: str) -> Optional[str]:
         """
@@ -34,6 +42,9 @@ class MemoryStorage(Storage):
     def __init__(self):
         self._data: Dict[str, str] = {}
 
+    def get_all(self) -> Dict[str, str]:
+        return copy(self._data)
+
     def get_checksum(self, configuration_id: str) -> Optional[str]:
         return self._data.get(configuration_id, None)
 
@@ -50,12 +61,15 @@ class DiskStorage(Storage):
     def __init__(self, storage_file_location: str):
         self.storage_file_location = storage_file_location
 
-    def get_checksum(self, configuration_id: str) -> Optional[str]:
+    def get_all(self) -> Dict[str, str]:
         if not os.path.exists(self.storage_file_location):
-            return None
+            return {}
 
         with open(self.storage_file_location, "r") as file:
-            return json.load(file).get(configuration_id, None)
+            return json.load(file)
+
+    def get_checksum(self, configuration_id: str) -> Optional[str]:
+        return self.get_all().get(configuration_id, None)
 
     def set_checksum(self, configuration_id: str, checksum: str):
         configuration = None

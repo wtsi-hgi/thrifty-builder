@@ -6,8 +6,10 @@ import os
 
 from thriftybuilder.storage import Storage, MemoryStorage, DiskStorage
 
-EXAMPLE_CONFIGURATION_ID = "test123"
+EXAMPLE_CONFIGURATION_ID = "example-1"
 EXAMPLE_CHECKSUM = "c02696b94a1787cdbe072931225d4dbc"
+EXAMPLE_CONFIGURATION_ID_2 = "example-2"
+EXAMPLE_CHECKSUM_2 = "f9f601085a99e4e1531bdad52771084b"
 
 
 class _TestStorage(unittest.TestCase, metaclass=ABCMeta):
@@ -23,6 +25,15 @@ class _TestStorage(unittest.TestCase, metaclass=ABCMeta):
 
     def setUp(self):
         self.storage = self.create_storage()
+
+    def test_get_all_when_none(self):
+        self.assertEqual(0, len(self.storage.get_all()))
+
+    def test_get_all(self):
+        self.storage.set_checksum(EXAMPLE_CONFIGURATION_ID, EXAMPLE_CHECKSUM)
+        self.storage.set_checksum(EXAMPLE_CONFIGURATION_ID_2, EXAMPLE_CHECKSUM_2)
+        self.assertEqual({EXAMPLE_CONFIGURATION_ID: EXAMPLE_CHECKSUM, EXAMPLE_CONFIGURATION_ID_2: EXAMPLE_CHECKSUM_2},
+                         self.storage.get_all())
 
     def test_get_when_not_set(self):
         self.assertIsNone(self.storage.get_checksum(EXAMPLE_CONFIGURATION_ID))
