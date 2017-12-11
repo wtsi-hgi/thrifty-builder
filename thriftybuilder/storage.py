@@ -51,11 +51,23 @@ class DiskStorage(Storage):
         self.storage_file_location = storage_file_location
 
     def get_checksum(self, configuration_id: str) -> Optional[str]:
+        if not os.path.exists(self.storage_file_location):
+            return None
+
         with open(self.storage_file_location, "r") as file:
-            return json.loads(file).get(configuration_id, None)
+            return json.load(file).get(configuration_id, None)
 
     def set_checksum(self, configuration_id: str, checksum: str):
-        with open(self.storage_file_location, "rw") as file:
-            configuration = json.loads(file)
+        configuration = None
+        if not os.path.exists(self.storage_file_location):
+            configuration = {}
+
+        with open(self.storage_file_location, "a+") as file:
+            file.seek(0)
+            if configuration is None:
+                configuration = json.load(file)
+                file.seek(0)
+            file.truncate()
             configuration[configuration_id] = checksum
             file.write(json.dumps(configuration))
+
