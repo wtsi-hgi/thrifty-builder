@@ -1,10 +1,9 @@
 import dockerfile
 import hashlib
-import itertools
 import os
 from abc import abstractmethod, ABCMeta
 from glob import glob
-from typing import List, Iterable, Set, Optional
+from typing import List, Iterable, Set, Optional, TypeVar
 
 from checksumdir import dirhash
 from zgitignore import ZgitIgnore
@@ -23,10 +22,17 @@ class BuildConfiguration(metaclass=ABCMeta):
     """
     @property
     @abstractmethod
+    def identifier(self) -> str:
+        """
+        TODO
+        :return:
+        """
+
+    @property
+    @abstractmethod
     def dependent_images(self) -> List[str]:
         """
         TODO
-        :param build_configuration:
         :return:
         """
 
@@ -35,22 +41,28 @@ class BuildConfiguration(metaclass=ABCMeta):
     def used_files(self) -> List[str]:
         """
         TODO
-        :param build_configuration:
         :return:
         """
 
     @abstractmethod
-    def get_checksum(self) -> str:
+    def calculate_checksum(self) -> str:
         """
         TODO
         :return:
         """
 
 
+BuildConfigurationType = TypeVar(bound=BuildConfiguration)
+
+
 class DockerBuildConfiguration(BuildConfiguration):
     """
     TODO
     """
+    @property
+    def identifier(self) -> str:
+        return self._identifier
+
     @property
     def dockerfile_location(self) -> Optional[str]:
         return self._dockerfile_location
@@ -89,43 +101,15 @@ class DockerBuildConfiguration(BuildConfiguration):
 
         return files
 
-    def __init__(self, dockerfile_location: str):
+    def __init__(self, image_name: str, dockerfile_location: str):
         """
         TODO
+        :param image_name:
         :param dockerfile_location:
         """
+        self._identifier = image_name
         self._dockerfile_location = dockerfile_location
         self.commands = dockerfile.parse_file(self.dockerfile_location)
-
-    def get_checksum(self) -> str:
-        """
-        Note: does not consider file metadata when calculating checksum.
-        """
-        return hashlib.md5(self.get_configuration_checksum() + self.get_used_files_checksum()).hexdigest()
-
-    def get_configuration_checksum(self) -> str:
-        """
-        TODO
-        :return:
-        """
-        hash_accumulator = hashlib.md5()
-        for command in self.commands:
-            hash_accumulator.update(command.original.encode(DEFAULT_ENCODING))
-        return hash_accumulator.hexdigest().encode(DEFAULT_ENCODING)
-
-    def get_used_files_checksum(self) -> str:
-        """
-        TODO
-        :return:
-        """
-        hash_accumulator = hashlib.md5()
-        for file_path in sorted(self.used_files):
-            if os.path.isdir(file_path):
-                hash_accumulator.update(dirhash(file_path).encode(DEFAULT_ENCODING))
-            else:
-                with open(file_path, "rb") as file:
-                    hash_accumulator.update(file.read())
-        return hash_accumulator.hexdigest().encode(DEFAULT_ENCODING)
 
     def get_ignored_files(self) -> Set[str]:
         """
@@ -137,4 +121,3 @@ class DockerBuildConfiguration(BuildConfiguration):
             return set()
         with open(dockerignore_path, "r") as file:
             return {line.strip() for line in file.readlines()}
-
