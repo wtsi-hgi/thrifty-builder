@@ -9,8 +9,8 @@ from thriftybuilder.configurations import BuildConfigurationType, DockerBuildCon
 BuildResultType = TypeVar("BuildResultType")
 
 
-class Builder(metaclass=ABCMeta, Generic[BuildConfigurationType, BuildResultType],
-              BuildConfigurationManager[BuildConfigurationType],):
+class Builder(Generic[BuildConfigurationType, BuildResultType], BuildConfigurationManager[BuildConfigurationType],
+              metaclass=ABCMeta):
     """
     TODO
     """

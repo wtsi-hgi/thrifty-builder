@@ -7,7 +7,7 @@ from thriftybuilder.models import BuildConfigurationContainer
 DEFAULT_ENCODING = "utf-8"
 
 
-class BuildConfigurationManager(metaclass=ABCMeta, Generic[BuildConfigurationType]):
+class BuildConfigurationManager(Generic[BuildConfigurationType], metaclass=ABCMeta):
     """
     TODO
     """

@@ -40,6 +40,15 @@ class TestDockerBuildConfiguration(unittest.TestCase):
                       for file in configuration.used_files)
         self.assertCountEqual(["a", "b", "c/d"], used_files)
 
+    def _create_docker_build_configuration(self, dockerfile_location: str) -> DockerBuildConfiguration:
+        """
+        TODO
+        :param dockerfile_location:
+        :return:
+        """
+        return DockerBuildConfiguration(EXAMPLE_IMAGE_NAME, dockerfile_location=EXAMPLE_3_DOCKERFILE)
+
+
 
 
 if __name__ == "__main__":

@@ -9,7 +9,7 @@ from thriftybuilder.common import DEFAULT_ENCODING, BuildConfigurationManager
 from thriftybuilder.configurations import BuildConfigurationType, DockerBuildConfiguration
 
 
-class Checksummer(metaclass=ABCMeta, Generic[BuildConfigurationType]):
+class Checksummer(Generic[BuildConfigurationType], metaclass=ABCMeta):
     """
     TODO
     """
@@ -31,8 +31,8 @@ class DockerImageChecksummer(Checksummer[DockerBuildConfiguration], BuildConfigu
         """
         configuration_checksum = self.calculate_configuration_checksum(build_configuration)
         used_files_checksum = self.calculate_used_files_checksum(build_configuration)
-        from_image_checksum = self.calculate_from_image_checksum(build_configuration) or ""
-        return hashlib.md5(configuration_checksum + used_files_checksum + from_image_checksum).hexdigest()
+        dependency_checksum = self.calculate_dependency_checksum(build_configuration) or ""
+        return hashlib.md5(configuration_checksum + used_files_checksum + dependency_checksum).hexdigest()
 
     def calculate_configuration_checksum(self, build_configuration: DockerBuildConfiguration) -> str:
         """
@@ -58,7 +58,7 @@ class DockerImageChecksummer(Checksummer[DockerBuildConfiguration], BuildConfigu
                     hash_accumulator.update(file.read())
         return hash_accumulator.hexdigest().encode(DEFAULT_ENCODING)
 
-    def calculate_from_image_checksum(self, build_configuration: DockerBuildConfiguration) -> Optional[str]:
+    def calculate_dependency_checksum(self, build_configuration: DockerBuildConfiguration) -> Optional[str]:
         """
         TODO
         :param build_configuration:
