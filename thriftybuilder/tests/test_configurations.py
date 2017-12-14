@@ -16,7 +16,7 @@ class TestDockerBuildConfiguration(unittest.TestCase):
 
     def test_get_dependent_image_from_dockerfile(self):
         configuration = DockerBuildConfiguration(dockerfile_location=EXAMPLE_1_DOCKERFILE)
-        self.assertCountEqual(["debian:jessie"], configuration.dependent_images)
+        self.assertCountEqual(["debian:jessie"], configuration.requires)
 
     def test_get_used_files_from_dockerfile_when_none_added(self):
         configuration = DockerBuildConfiguration(dockerfile_location=EXAMPLE_1_DOCKERFILE)

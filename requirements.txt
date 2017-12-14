@@ -1,3 +1,4 @@
 dockerfile
 checksumdir
 zgitignore
+docker

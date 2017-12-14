@@ -1,14 +1,10 @@
 import dockerfile
-import hashlib
 import os
 from abc import abstractmethod, ABCMeta
 from glob import glob
 from typing import List, Iterable, Set, Optional, TypeVar
 
-from checksumdir import dirhash
 from zgitignore import ZgitIgnore
-
-from thriftybuilder.common import DEFAULT_ENCODING
 
 _FROM_DOCKER_COMMAND = "from"
 _ADD_DOCKER_COMMAND = "add"
@@ -30,7 +26,7 @@ class BuildConfiguration(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def dependent_images(self) -> List[str]:
+    def requires(self) -> List[str]:
         """
         TODO
         :return:
@@ -39,13 +35,6 @@ class BuildConfiguration(metaclass=ABCMeta):
     @property
     @abstractmethod
     def used_files(self) -> List[str]:
-        """
-        TODO
-        :return:
-        """
-
-    @abstractmethod
-    def calculate_checksum(self) -> str:
         """
         TODO
         :return:
@@ -64,11 +53,7 @@ class DockerBuildConfiguration(BuildConfiguration):
         return self._identifier
 
     @property
-    def dockerfile_location(self) -> Optional[str]:
-        return self._dockerfile_location
-
-    @property
-    def dependent_images(self) -> List[str]:
+    def requires(self) -> List[str]:
         for command in self.commands:
             if command.cmd == _FROM_DOCKER_COMMAND:
                 return command.value
@@ -101,14 +86,32 @@ class DockerBuildConfiguration(BuildConfiguration):
 
         return files
 
-    def __init__(self, image_name: str, dockerfile_location: str):
+    @property
+    def from_image(self) -> str:
+        """
+        TODO
+        :return:
+        """
+        return self.requires[0]
+
+    @property
+    def dockerfile_location(self) -> Optional[str]:
+        return self._dockerfile_location
+
+    @property
+    def context(self) -> str:
+        return self._context
+
+    def __init__(self, image_name: str, dockerfile_location: str, context: str):
         """
         TODO
         :param image_name:
         :param dockerfile_location:
+        :param context:
         """
         self._identifier = image_name
         self._dockerfile_location = dockerfile_location
+        self._context = context
         self.commands = dockerfile.parse_file(self.dockerfile_location)
 
     def get_ignored_files(self) -> Set[str]:
