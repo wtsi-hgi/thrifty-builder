@@ -41,7 +41,7 @@ class BuildConfiguration(metaclass=ABCMeta):
         """
 
 
-BuildConfigurationType = TypeVar(bound=BuildConfiguration)
+BuildConfigurationType = TypeVar("BuildConfigurationType", bound=BuildConfiguration)
 
 
 class DockerBuildConfiguration(BuildConfiguration):
@@ -102,7 +102,7 @@ class DockerBuildConfiguration(BuildConfiguration):
     def context(self) -> str:
         return self._context
 
-    def __init__(self, image_name: str, dockerfile_location: str, context: str):
+    def __init__(self, image_name: str, dockerfile_location: str, context: str=None):
         """
         TODO
         :param image_name:
@@ -111,7 +111,7 @@ class DockerBuildConfiguration(BuildConfiguration):
         """
         self._identifier = image_name
         self._dockerfile_location = dockerfile_location
-        self._context = context
+        self._context = context if context is None else os.path.dirname(self.dockerfile_location)
         self.commands = dockerfile.parse_file(self.dockerfile_location)
 
     def get_ignored_files(self) -> Set[str]:
