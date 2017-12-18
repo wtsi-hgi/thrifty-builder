@@ -3,10 +3,10 @@ import shutil
 import unittest
 from abc import ABCMeta
 from tempfile import mkdtemp
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Iterable
 
 from thriftybuilder.configurations import DockerBuildConfiguration
-from thriftybuilder.tests._resources.constants import EXAMPLE_IMAGE_NAME
+from thriftybuilder.tests._resources.constants import EXAMPLE_IMAGE_NAME, EXAMPLE_FROM_COMMAND
 
 DOCKERFILE_PATH = "Dockerfile"
 FROM_COMMAND = "from"
@@ -16,8 +16,8 @@ COPY_COMMAND = "copy"
 
 
 def create_docker_setup(
-        commands: List[str]=None, context_files: Dict[str, Optional[str]]=None, image_name: str=EXAMPLE_IMAGE_NAME) \
-        -> Tuple[str, DockerBuildConfiguration]:
+        commands: Iterable[str]=(EXAMPLE_FROM_COMMAND, ), context_files: Dict[str, Optional[str]]=None,
+        image_name: str=EXAMPLE_IMAGE_NAME) -> Tuple[str, DockerBuildConfiguration]:
     """
     TODO
     :param commands:
@@ -32,7 +32,7 @@ def create_docker_setup(
     dockerfile_location = os.path.join(temp_directory, DOCKERFILE_PATH)
     with open(dockerfile_location, "w") as file:
         for command in commands:
-            file.write(command)
+            file.write(f"{command}\n")
 
     for location, value in context_files.items():
         absolute_location = os.path.join(temp_directory, location)
@@ -56,11 +56,8 @@ class TestWithDockerBuildConfiguration(unittest.TestCase, metaclass=ABCMeta):
         for location in self.setup_locations:
             shutil.rmtree(location)
 
-    def create_docker_setup(
-            self, commands: List[str]=None, context_files: Dict[str, Optional[str]]=None,
-            image_name: str=EXAMPLE_IMAGE_NAME) \
+    def create_docker_setup(self, *args, **kwargs) \
             -> Tuple[str, DockerBuildConfiguration]:
-        setup_location, build_configuration = create_docker_setup(
-            commands=commands, context_files=context_files, image_name=image_name)
+        setup_location, build_configuration = create_docker_setup(*args, **kwargs)
         self.setup_locations.append(setup_location)
         return setup_location, build_configuration

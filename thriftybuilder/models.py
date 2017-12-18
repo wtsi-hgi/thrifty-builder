@@ -13,13 +13,20 @@ class BuildConfigurationContainer(Generic[BuildConfigurationType]):
             for build_configuration in managed_build_configurations:
                 self.add(build_configuration)
 
+    def __iter__(self):
+        for build_configuration in self._build_configurations:
+            yield build_configuration
+
+    def __getitem__(self, item: str):
+        return self._build_configurations[item]
+
     def add(self, build_configuration: BuildConfigurationType):
         """
         TODO
         :param build_configuration:
         :return:
         """
-        self._build_configurations[build_configuration.identifier] = self._build_configurations
+        self._build_configurations[build_configuration.identifier] = build_configuration
 
     def remove(self, build_configuration: BuildConfigurationType):
         """

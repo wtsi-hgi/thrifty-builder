@@ -1,1 +1,11 @@
+from thriftybuilder.configurations import FROM_DOCKER_COMMAND, RUN_DOCKER_COMMAND
+
 EXAMPLE_IMAGE_NAME = "hello-world-test"
+
+EXAMPLE_FILE_NAME_1 = "example-1"
+EXAMPLE_FILE_CONTENTS_1 = "testing1"
+EXAMPLE_FILE_NAME_2 = "example-2"
+EXAMPLE_FILE_CONTENTS_2 = "testing2"
+
+EXAMPLE_FROM_COMMAND = f"{FROM_DOCKER_COMMAND} ubuntu"
+EXAMPLE_RUN_COMMAND = f"{RUN_DOCKER_COMMAND} echo test"

@@ -8,9 +8,16 @@ from zgitignore import ZgitIgnore
 from os import walk
 
 DOCKER_IGNORE_FILE = ".dockerignore"
-_FROM_DOCKER_COMMAND = "from"
-_ADD_DOCKER_COMMAND = "add"
-_COPY_DOCKER_COMMAND = "copy"
+FROM_DOCKER_COMMAND = "from"
+ADD_DOCKER_COMMAND = "add"
+RUN_DOCKER_COMMAND = "run"
+COPY_DOCKER_COMMAND = "copy"
+
+
+class InvalidBuildConfigurationError(Exception):
+    """
+    TODO
+    """
 
 
 class BuildConfiguration(metaclass=ABCMeta):
@@ -56,8 +63,10 @@ class DockerBuildConfiguration(BuildConfiguration):
     @property
     def requires(self) -> List[str]:
         for command in self.commands:
-            if command.cmd == _FROM_DOCKER_COMMAND:
+            if command.cmd == FROM_DOCKER_COMMAND:
                 return command.value
+        raise InvalidBuildConfigurationError(
+            f"No \"{FROM_DOCKER_COMMAND}\" command in dockerfile: {self.dockerfile_location}")
 
     @property
     def used_files(self) -> Iterable[str]:
@@ -66,7 +75,7 @@ class DockerBuildConfiguration(BuildConfiguration):
         """
         source_patterns: List[str] = []
         for command in self.commands:
-            if command.cmd in [_ADD_DOCKER_COMMAND, _COPY_DOCKER_COMMAND]:
+            if command.cmd in [ADD_DOCKER_COMMAND, COPY_DOCKER_COMMAND]:
                 assert len(command.value) >= 2
                 source_patterns.extend(command.value[0:-1])
 
@@ -78,9 +87,9 @@ class DockerBuildConfiguration(BuildConfiguration):
             else:
                 candidate_files = [full_source_path]
 
-            for file in candidate_files:
-                if not os.path.isdir(file):
-                    source_files.add(file)
+            for candidate_file in candidate_files:
+                if os.path.exists(candidate_file) and not os.path.isdir(candidate_file):
+                    source_files.add(candidate_file)
 
         return set(source_files - self.get_ignored_files())
 

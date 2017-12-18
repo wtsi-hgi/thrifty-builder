@@ -11,6 +11,6 @@ class BuildConfigurationManager(Generic[BuildConfigurationType], metaclass=ABCMe
     """
     TODO
     """
-    def __init__(self, managed_build_configurations: BuildConfigurationContainer[DockerBuildConfiguration]=None):
+    def __init__(self, managed_build_configurations: BuildConfigurationContainer[BuildConfigurationType]=None):
         self.managed_build_configurations = managed_build_configurations if managed_build_configurations is not None \
-            else BuildConfigurationContainer[DockerBuildConfiguration]()
+            else BuildConfigurationContainer[BuildConfigurationType]()
