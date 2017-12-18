@@ -1,15 +1,16 @@
 import dockerfile
 import os
 from abc import abstractmethod, ABCMeta
-from glob import glob
+from glob import glob, iglob
 from typing import List, Iterable, Set, Optional, TypeVar
 
 from zgitignore import ZgitIgnore
+from os import walk
 
+DOCKER_IGNORE_FILE = ".dockerignore"
 _FROM_DOCKER_COMMAND = "from"
 _ADD_DOCKER_COMMAND = "add"
 _COPY_DOCKER_COMMAND = "copy"
-_DOCKER_IGNORE_FILE = ".dockerignore"
 
 
 class BuildConfiguration(metaclass=ABCMeta):
@@ -69,10 +70,7 @@ class DockerBuildConfiguration(BuildConfiguration):
                 assert len(command.value) >= 2
                 source_patterns.extend(command.value[0:-1])
 
-        # ZGitIgnore roughly implements the same parsing of .dockerignore files as Docker:
-        # https://docs.docker.com/engine/reference/builder/#dockerignore-file
-        ignored_checker = ZgitIgnore(self.get_ignored_files())
-        files: List[str] = []
+        source_files: Set[str] = set()
         for source_path in source_patterns:
             full_source_path = os.path.normpath(os.path.join(os.path.dirname(self.dockerfile_location), source_path))
             if os.path.isdir(full_source_path):
@@ -81,10 +79,10 @@ class DockerBuildConfiguration(BuildConfiguration):
                 candidate_files = [full_source_path]
 
             for file in candidate_files:
-                if not os.path.isdir(file) and not ignored_checker.is_ignored(file):
-                    files.append(file)
+                if not os.path.isdir(file):
+                    source_files.add(file)
 
-        return files
+        return set(source_files - self.get_ignored_files())
 
     @property
     def from_image(self) -> str:
@@ -120,8 +118,26 @@ class DockerBuildConfiguration(BuildConfiguration):
         TODO
         :return:
         """
-        dockerignore_path = os.path.join(os.path.dirname(self.dockerfile_location), _DOCKER_IGNORE_FILE)
+        ignored_files = set()
+        dockerignore_path = os.path.join(os.path.dirname(self.dockerfile_location), DOCKER_IGNORE_FILE)
         if not os.path.exists(dockerignore_path):
-            return set()
+            return ignored_files
         with open(dockerignore_path, "r") as file:
-            return {line.strip() for line in file.readlines()}
+            ignored_patterns = [line.strip() for line in file.readlines()]
+
+        # Note: not using glob as it ignores hidden files
+        context_files: List[str] = []
+        for path, directories, file_names in walk(self.context):
+            for file_name in file_names:
+                context_files.append(os.path.join(path, file_name))
+
+        # ZGitIgnore roughly implements the same parsing of .dockerignore files as Docker:
+        # https://docs.docker.com/engine/reference/builder/#dockerignore-file
+        ignored_checker = ZgitIgnore(ignored_patterns)
+
+        for context_file in context_files:
+            relative_file_path = os.path.relpath(context_file, self.context)
+            if ignored_checker.is_ignored(relative_file_path):
+                ignored_files.add(context_file)
+
+        return ignored_files
