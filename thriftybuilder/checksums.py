@@ -1,7 +1,7 @@
 import hashlib
 import os
 from abc import ABCMeta, abstractmethod
-from typing import Generic, Optional, Any, Type, Callable, Union
+from typing import Generic, Optional, Callable, Union
 
 from checksumdir import dirhash
 
@@ -110,8 +110,5 @@ class DockerImageChecksumCalculator(
         :param build_configuration:
         :return:
         """
-        if build_configuration.from_image not in self.managed_build_configurations:
-            return None
-        else:
-            from_image_configuration = self.managed_build_configurations[build_configuration.from_image]
-            return self.calculate_checksum(from_image_configuration)
+        parent_build_configuration = self.managed_build_configurations.get(build_configuration.from_image)
+        return self.calculate_checksum(parent_build_configuration) if parent_build_configuration is not None else None
