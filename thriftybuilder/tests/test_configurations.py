@@ -31,8 +31,17 @@ class TestDockerBuildConfiguration(TestWithDockerBuildConfiguration):
         used_files = (os.path.relpath(file, start=context_directory) for file in configuration.used_files)
         self.assertCountEqual([EXAMPLE_FILE_NAME_1], used_files)
 
+    def test_used_files_when_add_directory(self):
+        directory = "test"
+        example_file_paths = (f"{directory}/a", f"{directory}/b", f"{directory}/c/d")
+        context_directory, configuration = self.create_docker_setup(
+            commands=(EXAMPLE_FROM_COMMAND, f"{_ADD_DOCKER_COMMAND} {directory} /example"),
+            context_files={file_path: None for file_path in example_file_paths})
+        used_files = (os.path.relpath(file, start=context_directory) for file in configuration.used_files)
+        self.assertCountEqual(example_file_paths, used_files)
+
     def test_used_files_when_multiple_add(self):
-        example_file_paths = ("a", "b", "c/d")
+        example_file_paths = ["a", "b", "c/d"]
         context_directory, configuration = self.create_docker_setup(
             commands=[EXAMPLE_FROM_COMMAND] + [f"{_ADD_DOCKER_COMMAND} {file_path} /{file_path}"
                                                for file_path in example_file_paths],
