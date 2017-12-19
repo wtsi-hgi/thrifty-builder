@@ -1,11 +1,11 @@
 from typing import Iterable
 
 from thriftybuilder.checksums import DockerImageChecksumCalculator
-from thriftybuilder.configurations import ADD_DOCKER_COMMAND, COPY_DOCKER_COMMAND, DockerBuildConfiguration, \
-    FROM_DOCKER_COMMAND
+from thriftybuilder.configurations import DockerBuildConfiguration
 from thriftybuilder.tests._common import TestWithDockerBuildConfiguration
-from thriftybuilder.tests._resources.constants import EXAMPLE_FILE_NAME_1, EXAMPLE_FILE_CONTENTS_1, \
+from thriftybuilder.tests._examples import EXAMPLE_FILE_NAME_1, EXAMPLE_FILE_CONTENTS_1, \
     EXAMPLE_FILE_NAME_2, EXAMPLE_FILE_CONTENTS_2, EXAMPLE_FROM_COMMAND, EXAMPLE_RUN_COMMAND, EXAMPLE_IMAGE_NAME
+from thriftybuilder.tests._common import COPY_DOCKER_COMMAND, ADD_DOCKER_COMMAND, FROM_DOCKER_COMMAND
 
 
 class TestDockerImageChecksumCalculator(TestWithDockerBuildConfiguration):
@@ -56,7 +56,7 @@ class TestDockerImageChecksumCalculator(TestWithDockerBuildConfiguration):
         _, from_configuration_2 = self.create_docker_setup(
             image_name=EXAMPLE_IMAGE_NAME, commands=(EXAMPLE_FROM_COMMAND, "other"))
 
-        configuration = self.create_docker_setup(commands=(f"{FROM_DOCKER_COMMAND} {EXAMPLE_IMAGE_NAME}", ))[1]
+        configuration = self.create_docker_setup(commands=(f"{FROM_DOCKER_COMMAND} {EXAMPLE_IMAGE_NAME}",))[1]
 
         self.checksum_calculator.managed_build_configurations.add(from_configuration_1)
         checksum_1 = self.checksum_calculator.calculate_checksum(configuration)
@@ -74,9 +74,9 @@ class TestDockerImageChecksumCalculator(TestWithDockerBuildConfiguration):
             image_name=grandparent_name, commands=(EXAMPLE_FROM_COMMAND, EXAMPLE_RUN_COMMAND))
 
         _, parent_configuration = self.create_docker_setup(
-            image_name=parent_name, commands=(f"{FROM_DOCKER_COMMAND} {grandparent_name}", ))
+            image_name=parent_name, commands=(f"{FROM_DOCKER_COMMAND} {grandparent_name}",))
         _, configuration = self.create_docker_setup(
-            commands=(f"{FROM_DOCKER_COMMAND} {parent_name}", ))
+            commands=(f"{FROM_DOCKER_COMMAND} {parent_name}",))
 
         self.checksum_calculator.managed_build_configurations.add(parent_configuration)
         self.checksum_calculator.managed_build_configurations.add(grandparent_configuration_1)

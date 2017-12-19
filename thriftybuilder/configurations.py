@@ -8,10 +8,10 @@ from zgitignore import ZgitIgnore
 from os import walk
 
 DOCKER_IGNORE_FILE = ".dockerignore"
-FROM_DOCKER_COMMAND = "from"
-ADD_DOCKER_COMMAND = "add"
-RUN_DOCKER_COMMAND = "run"
-COPY_DOCKER_COMMAND = "copy"
+_FROM_DOCKER_COMMAND = "from"
+_ADD_DOCKER_COMMAND = "add"
+_RUN_DOCKER_COMMAND = "run"
+_COPY_DOCKER_COMMAND = "copy"
 
 
 class InvalidBuildConfigurationError(Exception):
@@ -63,10 +63,10 @@ class DockerBuildConfiguration(BuildConfiguration):
     @property
     def requires(self) -> List[str]:
         for command in self.commands:
-            if command.cmd == FROM_DOCKER_COMMAND:
+            if command.cmd == _FROM_DOCKER_COMMAND:
                 return command.value
         raise InvalidBuildConfigurationError(
-            f"No \"{FROM_DOCKER_COMMAND}\" command in dockerfile: {self.dockerfile_location}")
+            f"No \"{_FROM_DOCKER_COMMAND}\" command in dockerfile: {self.dockerfile_location}")
 
     @property
     def used_files(self) -> Iterable[str]:
@@ -75,7 +75,7 @@ class DockerBuildConfiguration(BuildConfiguration):
         """
         source_patterns: List[str] = []
         for command in self.commands:
-            if command.cmd in [ADD_DOCKER_COMMAND, COPY_DOCKER_COMMAND]:
+            if command.cmd in [_ADD_DOCKER_COMMAND, _COPY_DOCKER_COMMAND]:
                 assert len(command.value) >= 2
                 source_patterns.extend(command.value[0:-1])
 

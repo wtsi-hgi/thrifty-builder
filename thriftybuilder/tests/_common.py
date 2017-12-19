@@ -6,13 +6,13 @@ from tempfile import mkdtemp
 from typing import List, Dict, Optional, Tuple, Iterable
 
 from thriftybuilder.configurations import DockerBuildConfiguration
-from thriftybuilder.tests._resources.constants import EXAMPLE_IMAGE_NAME, EXAMPLE_FROM_COMMAND
+from thriftybuilder.tests._examples import EXAMPLE_IMAGE_NAME, EXAMPLE_FROM_COMMAND
 
 DOCKERFILE_PATH = "Dockerfile"
-FROM_COMMAND = "from"
-RUN_COMMAND = "run"
-ADD_COMMAND = "add"
-COPY_COMMAND = "copy"
+FROM_DOCKER_COMMAND = "FROM"
+RUN_DOCKER_COMMAND = "RUN"
+ADD_DOCKER_COMMAND = "ADD"
+COPY_DOCKER_COMMAND = "COPY"
 
 
 def create_docker_setup(
