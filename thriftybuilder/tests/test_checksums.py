@@ -56,7 +56,7 @@ class TestDockerImageChecksumCalculator(TestWithDockerBuildConfiguration):
         _, from_configuration_2 = self.create_docker_setup(
             image_name=EXAMPLE_IMAGE_NAME, commands=(EXAMPLE_FROM_COMMAND, "other"))
 
-        configuration = self.create_docker_setup(commands=(f"{FROM_DOCKER_COMMAND} {EXAMPLE_IMAGE_NAME}",))[1]
+        _, configuration = self.create_docker_setup(commands=(f"{FROM_DOCKER_COMMAND} {EXAMPLE_IMAGE_NAME}",))
 
         self.checksum_calculator.managed_build_configurations.add(from_configuration_1)
         checksum_1 = self.checksum_calculator.calculate_checksum(configuration)
