@@ -22,6 +22,9 @@ class BuildConfigurationContainer(Generic[BuildConfigurationType]):
     def __len__(self) -> int:
         return len(self._build_configurations)
 
+    def __str__(self) -> str:
+        return str(self._build_configurations)
+
     def get(self, identifier: str, default: Optional[BuildConfigurationType]=None) -> Optional[BuildConfigurationType]:
         """
         TODO

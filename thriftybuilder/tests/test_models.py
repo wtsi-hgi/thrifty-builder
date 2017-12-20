@@ -46,7 +46,7 @@ class TestBuildConfigurationContainer(TestWithDockerBuildConfiguration):
         self.assertCountEqual([self.configuration], self.container)
 
     def test_add_when_added(self):
-        _, configuration_2 = self.create_docker_setup()
+        _, configuration_2 = self.create_docker_setup(image_name=self.configuration.identifier)
         self.container.add(self.configuration)
         self.container.add(configuration_2)
         self.assertCountEqual([configuration_2], self.container)

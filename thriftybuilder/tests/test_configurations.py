@@ -4,7 +4,7 @@ import unittest
 from thriftybuilder.configurations import DOCKER_IGNORE_FILE, _ADD_DOCKER_COMMAND, \
     _COPY_DOCKER_COMMAND
 from thriftybuilder.tests._common import TestWithDockerBuildConfiguration, DOCKERFILE_PATH, FROM_DOCKER_COMMAND
-from thriftybuilder.tests._examples import EXAMPLE_IMAGE_NAME, EXAMPLE_FROM_COMMAND, EXAMPLE_FROM_IMAGE_NAME, \
+from thriftybuilder.tests._examples import EXAMPLE_IMAGE_NAME, EXAMPLE_FROM_IMAGE_NAME, \
     EXAMPLE_FILE_NAME_1
 
 
@@ -17,7 +17,7 @@ class TestDockerBuildConfiguration(TestWithDockerBuildConfiguration):
         self.assertEqual(EXAMPLE_IMAGE_NAME, configuration.identifier)
 
     def test_requires(self):
-        _, configuration = self.create_docker_setup(commands=(EXAMPLE_FROM_COMMAND, ))
+        _, configuration = self.create_docker_setup(from_image_name=EXAMPLE_FROM_IMAGE_NAME)
         self.assertCountEqual([EXAMPLE_FROM_IMAGE_NAME], configuration.requires)
 
     def test_used_files_when_none_added(self):
@@ -26,16 +26,16 @@ class TestDockerBuildConfiguration(TestWithDockerBuildConfiguration):
 
     def test_used_files_when_one_add(self):
         context_directory, configuration = self.create_docker_setup(
-            commands=(EXAMPLE_FROM_COMMAND, f"{_ADD_DOCKER_COMMAND} {EXAMPLE_FILE_NAME_1} /example"),
+            commands=(f"{_ADD_DOCKER_COMMAND} {EXAMPLE_FILE_NAME_1} /example", ),
             context_files={EXAMPLE_FILE_NAME_1: None})
         used_files = (os.path.relpath(file, start=context_directory) for file in configuration.used_files)
         self.assertCountEqual([EXAMPLE_FILE_NAME_1], used_files)
 
     def test_used_files_when_add_directory(self):
         directory = "test"
-        example_file_paths = (f"{directory}/a", f"{directory}/b", f"{directory}/c/d")
+        example_file_paths = [f"{directory}/{suffix}" for suffix in ["a", "b", "c/d/e", "c/d/f"]]
         context_directory, configuration = self.create_docker_setup(
-            commands=(EXAMPLE_FROM_COMMAND, f"{_ADD_DOCKER_COMMAND} {directory} /example"),
+            commands=(f"{_ADD_DOCKER_COMMAND} {directory} /example", ),
             context_files={file_path: None for file_path in example_file_paths})
         used_files = (os.path.relpath(file, start=context_directory) for file in configuration.used_files)
         self.assertCountEqual(example_file_paths, used_files)
@@ -43,8 +43,7 @@ class TestDockerBuildConfiguration(TestWithDockerBuildConfiguration):
     def test_used_files_when_multiple_add(self):
         example_file_paths = ["a", "b", "c/d"]
         context_directory, configuration = self.create_docker_setup(
-            commands=[EXAMPLE_FROM_COMMAND] + [f"{_ADD_DOCKER_COMMAND} {file_path} /{file_path}"
-                                               for file_path in example_file_paths],
+            commands=[f"{_ADD_DOCKER_COMMAND} {file_path} /{file_path}" for file_path in example_file_paths],
             context_files={file_path: None for file_path in example_file_paths})
         used_files = (os.path.relpath(file, start=context_directory) for file in configuration.used_files)
         self.assertCountEqual(example_file_paths, used_files)
@@ -58,14 +57,14 @@ class TestDockerBuildConfiguration(TestWithDockerBuildConfiguration):
             copy_add_commands.append(f"{command} {example_add_file_paths[i]} /{example_add_file_paths[i]}")
 
         context_directory, configuration = self.create_docker_setup(
-            commands=[EXAMPLE_FROM_COMMAND] + copy_add_commands,
+            commands=copy_add_commands,
             context_files={file_path: None for file_path in example_add_file_paths})
         used_files = (os.path.relpath(file, start=context_directory) for file in configuration.used_files)
         self.assertCountEqual(example_add_file_paths, used_files)
 
-    def test_from_image(self):
-        _, configuration = self.create_docker_setup(commands=[f"{FROM_DOCKER_COMMAND} ubuntu:17.04"])
-        self.assertEqual("ubuntu:17.04", configuration.from_image)
+    def test_from_image_name(self):
+        _, configuration = self.create_docker_setup(from_image_name=EXAMPLE_FROM_IMAGE_NAME)
+        self.assertEqual(EXAMPLE_FROM_IMAGE_NAME, configuration.from_image)
 
     def test_dockerfile_location(self):
         context_location, configuration = self.create_docker_setup()

@@ -23,7 +23,7 @@ class Builder(Generic[BuildConfigurationType, BuildResultType], BuildConfigurati
 
     def build(self, build_configuration: BuildConfigurationType,
               allowed_dependency_builds: Iterable[BuildConfigurationType]=None) \
-            -> Tuple[BuildResultType, Dict[BuildConfigurationType: BuildResultType]]:
+            -> Dict[BuildConfigurationType, BuildResultType]:
         """
         TODO
         :param build_configuration:
@@ -32,24 +32,28 @@ class Builder(Generic[BuildConfigurationType, BuildResultType], BuildConfigurati
         """
         allowed_dependency_builds = set(allowed_dependency_builds if allowed_dependency_builds is not None
                                         else self.managed_build_configurations)
-        requires_build_results: Dict[BuildConfigurationType: BuildResultType] = {}
+        allowed_dependency_builds.add(build_configuration)
+        build_results: Dict[BuildConfigurationType: BuildResultType] = {}
 
         for required_build_configuration_identifier in build_configuration.requires:
             required_build_configuration = self.managed_build_configurations.get(
                 required_build_configuration_identifier, default=None)
             if required_build_configuration is not None and required_build_configuration in allowed_dependency_builds:
-                parent_build_result, grandparent_build_results = self.build(required_build_configuration)
-                requires_build_results[required_build_configuration] = parent_build_result
-                requires_build_results.update(grandparent_build_results)
+                parent_build_results = self.build(required_build_configuration)
+                build_results.update(parent_build_results)
 
-        return self._build(build_configuration), requires_build_results
+        build_result = self._build(build_configuration)
+        assert build_configuration not in build_results
+        build_results[build_configuration] = build_result
+        assert set(build_results.keys()).issubset(allowed_dependency_builds)
+        return build_results
 
-    def build_all(self) -> Dict[BuildConfigurationType: BuildResultType]:
+    def build_all(self) -> Dict[BuildConfigurationType, BuildResultType]:
         """
         TODO
         :return:
         """
-        build_results: Dict[BuildConfigurationType: BuildResultType] = {}
+        all_build_results: Dict[BuildConfigurationType: BuildResultType] = {}
         left_to_build: Set[BuildConfigurationType] = set(self.managed_build_configurations)
 
         while len(left_to_build) != 0:
@@ -59,20 +63,17 @@ class Builder(Generic[BuildConfigurationType, BuildResultType], BuildConfigurati
                 required_build_configuration = self.managed_build_configurations.get(
                     required_build_configuration_identifier, default=None)
                 if required_build_configuration in left_to_build:
-                    build_result, parents_build_results = self.build(required_build_configuration, left_to_build)
-                    all_build_results = dict(**parents_build_results, **{required_build_configuration: build_result})
-                    for build_configuration, build_result in all_build_results.items():
-                        build_results[build_configuration] = build_result
-                        left_to_build.remove(build_configuration)
+                    dependency_build_results = self.build(required_build_configuration, left_to_build)
+                    all_build_results.update(dependency_build_results)
+                    for dependency_build_configuration in dependency_build_results.keys():
+                        left_to_build.remove(dependency_build_configuration)
 
-            assert build_configuration in left_to_build, \
+            assert build_configuration not in all_build_results.keys(), \
                 f"Circular build dependency on {build_configuration.identifier}"
-            # TODO: Limit parent, parent builds!
-            build_result, parents_build_results = self._build(build_configuration)
-            assert build_configuration not in parents_build_results
-            build_results.update(dict(**parents_build_results, **{build_configuration: build_result}))
+            build_results = self._build(build_configuration)
+            all_build_results.update({build_configuration: build_results})
 
-        return build_results
+        return all_build_results
 
 
 class DockerBuilder(Builder[DockerBuildConfiguration, str]):
@@ -81,10 +82,10 @@ class DockerBuilder(Builder[DockerBuildConfiguration, str]):
     """
     def __init__(self):
         super().__init__()
-        self._client = docker.from_env()
+        self._docker_client = docker.from_env()
 
     def _build(self, build_configuration: DockerBuildConfiguration) -> str:
-        # TODO: Consider settings `cache_from`: https://docker-py.readthedocs.io/en/stable/images.html
-        self._client.images.build(path=build_configuration.context, tag=build_configuration.identifier,
-                                  dockerfile=build_configuration.dockerfile_location)
+        # TODO: Consider setting `cache_from`: https://docker-py.readthedocs.io/en/stable/images.html
+        self._docker_client.images.build(path=build_configuration.context, tag=build_configuration.identifier,
+                                         dockerfile=build_configuration.dockerfile_location)
         return build_configuration.identifier

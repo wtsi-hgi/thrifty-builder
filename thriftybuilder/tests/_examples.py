@@ -1,12 +1,21 @@
-from thriftybuilder.tests._common import FROM_DOCKER_COMMAND, RUN_DOCKER_COMMAND
+from uuid import uuid4
+
+from thriftybuilder.tests._common import RUN_DOCKER_COMMAND
 
 EXAMPLE_IMAGE_NAME = "hello-world-test"
-EXAMPLE_FROM_IMAGE_NAME = "ubuntu:17.04"
+EXAMPLE_FROM_IMAGE_NAME = "ubuntu:16.04"
 
 EXAMPLE_FILE_NAME_1 = "example-1"
 EXAMPLE_FILE_CONTENTS_1 = "testing1"
 EXAMPLE_FILE_NAME_2 = "example-2"
 EXAMPLE_FILE_CONTENTS_2 = "testing2"
 
-EXAMPLE_FROM_COMMAND = f"{FROM_DOCKER_COMMAND} {EXAMPLE_FROM_IMAGE_NAME}"
 EXAMPLE_RUN_COMMAND = f"{RUN_DOCKER_COMMAND} echo test"
+
+
+def name_generator(identifier: str= "") -> str:
+    """
+    TODO
+    :return:
+    """
+    return f"thrifty-builder-test-{identifier}{uuid4()}"

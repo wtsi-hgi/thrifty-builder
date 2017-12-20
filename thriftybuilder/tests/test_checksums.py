@@ -2,10 +2,10 @@ from typing import Iterable
 
 from thriftybuilder.checksums import DockerImageChecksumCalculator
 from thriftybuilder.configurations import DockerBuildConfiguration
-from thriftybuilder.tests._common import COPY_DOCKER_COMMAND, ADD_DOCKER_COMMAND, FROM_DOCKER_COMMAND
+from thriftybuilder.tests._common import COPY_DOCKER_COMMAND, ADD_DOCKER_COMMAND, RUN_DOCKER_COMMAND
 from thriftybuilder.tests._common import TestWithDockerBuildConfiguration
 from thriftybuilder.tests._examples import EXAMPLE_FILE_NAME_1, EXAMPLE_FILE_CONTENTS_1, \
-    EXAMPLE_FILE_NAME_2, EXAMPLE_FILE_CONTENTS_2, EXAMPLE_FROM_COMMAND, EXAMPLE_RUN_COMMAND, EXAMPLE_IMAGE_NAME
+    EXAMPLE_FILE_NAME_2, EXAMPLE_FILE_CONTENTS_2, EXAMPLE_RUN_COMMAND, EXAMPLE_IMAGE_NAME
 
 
 class TestDockerImageChecksumCalculator(TestWithDockerBuildConfiguration):
@@ -18,9 +18,9 @@ class TestDockerImageChecksumCalculator(TestWithDockerBuildConfiguration):
 
     def test_calculate_checksum_with_configurations(self):
         configurations = [
-            self.create_docker_setup(commands=(EXAMPLE_FROM_COMMAND, ))[1],
-            self.create_docker_setup(commands=(EXAMPLE_FROM_COMMAND, EXAMPLE_RUN_COMMAND))[1],
-            self.create_docker_setup(commands=(EXAMPLE_FROM_COMMAND, EXAMPLE_RUN_COMMAND, EXAMPLE_RUN_COMMAND))[1],
+            self.create_docker_setup()[1],
+            self.create_docker_setup(commands=(EXAMPLE_RUN_COMMAND))[1],
+            self.create_docker_setup(commands=(EXAMPLE_RUN_COMMAND, EXAMPLE_RUN_COMMAND))[1],
         ]
         self._assert_different_checksums(configurations)
 
@@ -28,24 +28,23 @@ class TestDockerImageChecksumCalculator(TestWithDockerBuildConfiguration):
         add_file_1_command = f"{ADD_DOCKER_COMMAND} {EXAMPLE_FILE_NAME_1} files_1"
         copy_file_2_command = f"{COPY_DOCKER_COMMAND} {EXAMPLE_FILE_NAME_2} files_2"
         configurations = [
+            self.create_docker_setup()[1],
             self.create_docker_setup(
-                commands=(EXAMPLE_FROM_COMMAND,))[1],
-            self.create_docker_setup(
-                commands=(EXAMPLE_FROM_COMMAND, add_file_1_command),
+                commands=(add_file_1_command, ),
                 context_files={EXAMPLE_FILE_NAME_1: EXAMPLE_FILE_CONTENTS_1})[1],
             self.create_docker_setup(
-                commands=(EXAMPLE_FROM_COMMAND, copy_file_2_command),
+                commands=(copy_file_2_command, ),
                 context_files={EXAMPLE_FILE_NAME_2: EXAMPLE_FILE_CONTENTS_2})[1],
             self.create_docker_setup(
-                commands=(EXAMPLE_FROM_COMMAND, add_file_1_command, copy_file_2_command),
+                commands=(add_file_1_command, copy_file_2_command),
                 context_files={EXAMPLE_FILE_NAME_1: EXAMPLE_FILE_CONTENTS_1,
                                EXAMPLE_FILE_NAME_2: EXAMPLE_FILE_CONTENTS_2})[1],
             self.create_docker_setup(
-                commands=(EXAMPLE_FROM_COMMAND, add_file_1_command, copy_file_2_command),
+                commands=(add_file_1_command, copy_file_2_command),
                 context_files={EXAMPLE_FILE_NAME_1: EXAMPLE_FILE_CONTENTS_2,
                                EXAMPLE_FILE_NAME_2: EXAMPLE_FILE_CONTENTS_2})[1],
             self.create_docker_setup(
-                commands=(EXAMPLE_FROM_COMMAND, add_file_1_command, copy_file_2_command),
+                commands=(add_file_1_command, copy_file_2_command),
                 context_files={EXAMPLE_FILE_NAME_1: EXAMPLE_FILE_CONTENTS_1,
                                EXAMPLE_FILE_NAME_2: EXAMPLE_FILE_CONTENTS_1})[1]]
         self._assert_different_checksums(configurations)
@@ -54,9 +53,9 @@ class TestDockerImageChecksumCalculator(TestWithDockerBuildConfiguration):
         _, from_configuration_1 = self.create_docker_setup(
             image_name=EXAMPLE_IMAGE_NAME)
         _, from_configuration_2 = self.create_docker_setup(
-            image_name=EXAMPLE_IMAGE_NAME, commands=(EXAMPLE_FROM_COMMAND, "other"))
+            image_name=EXAMPLE_IMAGE_NAME, commands=(f"{RUN_DOCKER_COMMAND} other", ))
 
-        _, configuration = self.create_docker_setup(commands=(f"{FROM_DOCKER_COMMAND} {EXAMPLE_IMAGE_NAME}",))
+        _, configuration = self.create_docker_setup(from_image_name=EXAMPLE_IMAGE_NAME)
 
         self.checksum_calculator.managed_build_configurations.add(from_configuration_1)
         checksum_1 = self.checksum_calculator.calculate_checksum(configuration)
@@ -68,14 +67,11 @@ class TestDockerImageChecksumCalculator(TestWithDockerBuildConfiguration):
         grandparent_name = "grandparent"
         parent_name = "parent"
 
-        _, grandparent_configuration_1 = self.create_docker_setup(
-            image_name=grandparent_name)
+        _, grandparent_configuration_1 = self.create_docker_setup(image_name=grandparent_name)
         _, grandparent_configuration_2 = self.create_docker_setup(
-            image_name=grandparent_name, commands=(EXAMPLE_FROM_COMMAND, EXAMPLE_RUN_COMMAND))
-        _, parent_configuration = self.create_docker_setup(
-            image_name=parent_name, commands=(f"{FROM_DOCKER_COMMAND} {grandparent_name}",))
-        _, configuration = self.create_docker_setup(
-            commands=(f"{FROM_DOCKER_COMMAND} {parent_name}",))
+            image_name=grandparent_name, commands=(EXAMPLE_RUN_COMMAND, ))
+        _, parent_configuration = self.create_docker_setup(image_name=parent_name, from_image_name=grandparent_name)
+        _, configuration = self.create_docker_setup(from_image_name=parent_name)
 
         self.checksum_calculator.managed_build_configurations.add(parent_configuration)
         self.checksum_calculator.managed_build_configurations.add(grandparent_configuration_1)

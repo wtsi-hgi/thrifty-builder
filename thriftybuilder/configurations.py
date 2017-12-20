@@ -1,11 +1,11 @@
 import dockerfile
 import os
 from abc import abstractmethod, ABCMeta
-from glob import glob, iglob
-from typing import List, Iterable, Set, Optional, TypeVar
-
-from zgitignore import ZgitIgnore
+from glob import glob
 from os import walk
+
+from typing import List, Iterable, Set, Optional, TypeVar
+from zgitignore import ZgitIgnore
 
 DOCKER_IGNORE_FILE = ".dockerignore"
 _FROM_DOCKER_COMMAND = "from"
@@ -47,6 +47,10 @@ class BuildConfiguration(metaclass=ABCMeta):
         TODO
         :return:
         """
+
+    def __str__(self) -> str:
+        return self.identifier
+
 
 
 BuildConfigurationType = TypeVar("BuildConfigurationType", bound=BuildConfiguration)
