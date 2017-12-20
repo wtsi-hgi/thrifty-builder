@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
-from typing import Generic, TypeVar, Tuple, Iterable, Set, Dict
 
 import docker
+from typing import Generic, TypeVar, Iterable, Set, Dict
 
 from thriftybuilder.common import BuildConfigurationManager
 from thriftybuilder.configurations import BuildConfigurationType, DockerBuildConfiguration
@@ -12,23 +12,25 @@ BuildResultType = TypeVar("BuildResultType")
 class Builder(Generic[BuildConfigurationType, BuildResultType], BuildConfigurationManager[BuildConfigurationType],
               metaclass=ABCMeta):
     """
-    TODO
+    Builder of items defined by the given build configuration type.
     """
     @abstractmethod
     def _build(self, build_configuration: BuildConfigurationType) -> BuildResultType:
         """
-        TODO
-        :return:
+        Builds the given build configuration, given that its build dependencies have already been built.
+        :param build_configuration: the configuration to build
+        :return: the result of building the given configuration
         """
 
     def build(self, build_configuration: BuildConfigurationType,
               allowed_dependency_builds: Iterable[BuildConfigurationType]=None) \
             -> Dict[BuildConfigurationType, BuildResultType]:
         """
-        TODO
-        :param build_configuration:
-        :param allowed_dependency_builds:
-        :return:
+        Builds the given build configuration, including any (allowed and managed) dependencies.
+        :param build_configuration: the configuration to build
+        :param allowed_dependency_builds: dependencies that can get built in order to build the configuration. If set
+        to `None`, all dependencies will be built (default)
+        :return: mapping between built configurations and their associated build result
         """
         allowed_dependency_builds = set(allowed_dependency_builds if allowed_dependency_builds is not None
                                         else self.managed_build_configurations)
@@ -50,8 +52,8 @@ class Builder(Generic[BuildConfigurationType, BuildResultType], BuildConfigurati
 
     def build_all(self) -> Dict[BuildConfigurationType, BuildResultType]:
         """
-        TODO
-        :return:
+        Builds all managed images and their managed dependencies.
+        :return: mapping between built configurations and their associated build result
         """
         all_build_results: Dict[BuildConfigurationType: BuildResultType] = {}
         left_to_build: Set[BuildConfigurationType] = set(self.managed_build_configurations)
@@ -78,7 +80,7 @@ class Builder(Generic[BuildConfigurationType, BuildResultType], BuildConfigurati
 
 class DockerBuilder(Builder[DockerBuildConfiguration, str]):
     """
-    TODO
+    Builder of Docker images.
     """
     def __init__(self):
         super().__init__()

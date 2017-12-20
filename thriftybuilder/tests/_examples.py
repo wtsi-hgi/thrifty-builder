@@ -15,7 +15,8 @@ EXAMPLE_RUN_COMMAND = f"{RUN_DOCKER_COMMAND} echo test"
 
 def name_generator(identifier: str= "") -> str:
     """
-    TODO
-    :return:
+    Generates a unique name.
+    :param identifier: identifier to add to the name
+    :return: the generated name
     """
     return f"thrifty-builder-test-{identifier}{uuid4()}"

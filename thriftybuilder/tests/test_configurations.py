@@ -3,7 +3,7 @@ import unittest
 
 from thriftybuilder.configurations import DOCKER_IGNORE_FILE, _ADD_DOCKER_COMMAND, \
     _COPY_DOCKER_COMMAND
-from thriftybuilder.tests._common import TestWithDockerBuildConfiguration, DOCKERFILE_PATH, FROM_DOCKER_COMMAND
+from thriftybuilder.tests._common import TestWithDockerBuildConfiguration, DOCKERFILE_PATH
 from thriftybuilder.tests._examples import EXAMPLE_IMAGE_NAME, EXAMPLE_FROM_IMAGE_NAME, \
     EXAMPLE_FILE_NAME_1
 

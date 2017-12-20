@@ -8,6 +8,7 @@ from typing import List, Iterable, Set, Optional, TypeVar
 from zgitignore import ZgitIgnore
 
 DOCKER_IGNORE_FILE = ".dockerignore"
+
 _FROM_DOCKER_COMMAND = "from"
 _ADD_DOCKER_COMMAND = "add"
 _RUN_DOCKER_COMMAND = "run"
@@ -16,36 +17,36 @@ _COPY_DOCKER_COMMAND = "copy"
 
 class InvalidBuildConfigurationError(Exception):
     """
-    TODO
+    Exception raised if a build configuration is invalid.
     """
 
 
 class BuildConfiguration(metaclass=ABCMeta):
     """
-    TODO
+    A configuration that describes how an item is built.
     """
     @property
     @abstractmethod
     def identifier(self) -> str:
         """
-        TODO
-        :return:
+        Unique identifier of this configuration.
+        :return: the identifier
         """
 
     @property
     @abstractmethod
     def requires(self) -> List[str]:
         """
-        TODO
-        :return:
+        Other build configurations that this configuration is dependent on.
+        :return: list of configurations
         """
 
     @property
     @abstractmethod
     def used_files(self) -> List[str]:
         """
-        TODO
-        :return:
+        The files that this configuration to build an itme.
+        :return: list of used files
         """
 
     def __str__(self) -> str:
@@ -58,7 +59,7 @@ BuildConfigurationType = TypeVar("BuildConfigurationType", bound=BuildConfigurat
 
 class DockerBuildConfiguration(BuildConfiguration):
     """
-    TODO
+    A configuration that describes how a Docker image is built.
     """
     @property
     def identifier(self) -> str:
@@ -100,8 +101,8 @@ class DockerBuildConfiguration(BuildConfiguration):
     @property
     def from_image(self) -> str:
         """
-        TODO
-        :return:
+        The image that the one built with this configuration is based off.
+        :return: the parent image
         """
         assert len(self.requires) == 1
         return self.requires[0]
@@ -116,10 +117,10 @@ class DockerBuildConfiguration(BuildConfiguration):
 
     def __init__(self, image_name: str, dockerfile_location: str, context: str=None):
         """
-        TODO
-        :param image_name:
-        :param dockerfile_location:
-        :param context:
+        Constructor.
+        :param image_name: name of the image built by this configuration (becomes its identifier)
+        :param dockerfile_location: the location of the Dockerfile that describes how the image is built
+        :param context: context in which the image is built
         """
         self._identifier = image_name
         self._dockerfile_location = dockerfile_location
@@ -128,8 +129,8 @@ class DockerBuildConfiguration(BuildConfiguration):
 
     def get_ignored_files(self) -> Set[str]:
         """
-        TODO
-        :return:
+        Gets the files in the context that are ignored as per the .dockerignore file.
+        :return: ignored files
         """
         ignored_files = set()
         dockerignore_path = os.path.join(os.path.dirname(self.dockerfile_location), DOCKER_IGNORE_FILE)

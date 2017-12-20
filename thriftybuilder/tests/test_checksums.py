@@ -1,6 +1,6 @@
 from typing import Iterable
 
-from thriftybuilder.checksums import DockerImageChecksumCalculator
+from thriftybuilder.checksums import DockerBuildChecksumCalculator
 from thriftybuilder.configurations import DockerBuildConfiguration
 from thriftybuilder.tests._common import COPY_DOCKER_COMMAND, ADD_DOCKER_COMMAND, RUN_DOCKER_COMMAND
 from thriftybuilder.tests._common import TestWithDockerBuildConfiguration
@@ -8,13 +8,13 @@ from thriftybuilder.tests._examples import EXAMPLE_FILE_NAME_1, EXAMPLE_FILE_CON
     EXAMPLE_FILE_NAME_2, EXAMPLE_FILE_CONTENTS_2, EXAMPLE_RUN_COMMAND, EXAMPLE_IMAGE_NAME
 
 
-class TestDockerImageChecksumCalculator(TestWithDockerBuildConfiguration):
+class TestDockerBuildChecksumCalculator(TestWithDockerBuildConfiguration):
     """
-    Tests for `DockerImageChecksumCalculator`.
+    Tests for `DockerBuildChecksumCalculator`.
     """
     def setUp(self):
         super().setUp()
-        self.checksum_calculator = DockerImageChecksumCalculator()
+        self.checksum_calculator = DockerBuildChecksumCalculator()
 
     def test_calculate_checksum_with_configurations(self):
         configurations = [
@@ -82,9 +82,9 @@ class TestDockerImageChecksumCalculator(TestWithDockerBuildConfiguration):
 
     def _assert_different_checksums(self, configurations: Iterable[DockerBuildConfiguration]):
         """
-        TODO
-        :param configurations:
-        :return:
+        Assert that the given configurations all have different checksums.
+        :param configurations: the configurations to consider
+        :raises AssertionError: when the assertion fails
         """
         checksums = set()
         i = 0
@@ -93,4 +93,5 @@ class TestDockerImageChecksumCalculator(TestWithDockerBuildConfiguration):
             self.assertNotIn(checksum, checksums)
             checksums.add(checksum)
             i += 1
-        assert len(checksums) == i
+        if len(checksums) != i:
+            raise AssertionError()

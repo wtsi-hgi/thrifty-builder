@@ -1,13 +1,12 @@
+import itertools
 import unittest
 
 import docker
-import itertools
 from docker.errors import ImageNotFound
 from docker.models.images import Image
 
 from thriftybuilder.builders import DockerBuilder
 from thriftybuilder.tests._common import TestWithDockerBuildConfiguration
-from thriftybuilder.tests._examples import EXAMPLE_IMAGE_NAME, name_generator, EXAMPLE_FROM_IMAGE_NAME
 
 
 class TestDockerBuilder(TestWithDockerBuildConfiguration):

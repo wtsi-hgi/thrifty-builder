@@ -1,10 +1,9 @@
+import os
 import unittest
 from abc import ABCMeta, abstractmethod
 from tempfile import NamedTemporaryFile
 
-import os
-
-from thriftybuilder.storage import Storage, MemoryStorage, DiskStorage
+from thriftybuilder.storage import ChecksumStorage, MemoryChecksumStorage, DiskChecksumStorage
 
 EXAMPLE_CONFIGURATION_ID = "example-1"
 EXAMPLE_CHECKSUM = "c02696b94a1787cdbe072931225d4dbc"
@@ -12,12 +11,12 @@ EXAMPLE_CONFIGURATION_ID_2 = "example-2"
 EXAMPLE_CHECKSUM_2 = "f9f601085a99e4e1531bdad52771084b"
 
 
-class _TestStorage(unittest.TestCase, metaclass=ABCMeta):
+class _TestChecksumStorage(unittest.TestCase, metaclass=ABCMeta):
     """
-    Tests for `Storage` subclasses.
+    Tests for `ChecksumStorage` subclasses.
     """
     @abstractmethod
-    def create_storage(self) -> Storage:
+    def create_storage(self) -> ChecksumStorage:
         """
         Creates storage manager to be tested.
         :return: the created storage manager
@@ -53,17 +52,17 @@ class _TestStorage(unittest.TestCase, metaclass=ABCMeta):
         self.assertEqual({EXAMPLE_CONFIGURATION_ID: EXAMPLE_CHECKSUM}, self.storage.get_all())
 
 
-class TestMemoryStorage(_TestStorage):
+class TestMemoryChecksumStorage(_TestChecksumStorage):
     """
-    Tests for `MemoryStorage`.
+    Tests for `MemoryChecksumStorage`.
     """
-    def create_storage(self) -> Storage:
-        return MemoryStorage()
+    def create_storage(self) -> ChecksumStorage:
+        return MemoryChecksumStorage()
 
 
-class TestDiskStorage(_TestStorage):
+class TestDiskChecksumStorage(_TestChecksumStorage):
     """
-    Tests for `DiskStorage`.
+    Tests for `DiskChecksumStorage`.
     """
     def setUp(self):
         self._temp_file = NamedTemporaryFile().name
@@ -73,11 +72,11 @@ class TestDiskStorage(_TestStorage):
         if os.path.exists(self._temp_file):
             os.remove(self._temp_file)
 
-    def create_storage(self) -> Storage:
-        return DiskStorage(self._temp_file)
+    def create_storage(self) -> ChecksumStorage:
+        return DiskChecksumStorage(self._temp_file)
 
 
-del _TestStorage
+del _TestChecksumStorage
 
 if __name__ == "__main__":
     unittest.main()

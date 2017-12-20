@@ -1,43 +1,42 @@
 import json
+import os
 from abc import ABCMeta, abstractmethod
 from copy import copy
+
 from typing import Optional, Dict
 
-import os
 
-
-class Storage(metaclass=ABCMeta):
+class ChecksumStorage(metaclass=ABCMeta):
     """
-    TODO
+    Store of mappings between configurations, identified by ID, and checksums.
     """
     @abstractmethod
     def get_all(self) -> Dict[str, str]:
         """
-        TODO
-        :return:
+        Gets all of the identifer -> checksum mappings.
+        :return: all stored mappings
         """
 
     @abstractmethod
     def get_checksum(self, configuration_id: str) -> Optional[str]:
         """
-        TODO
-        :param configuration_id:
-        :return:
+        Gets the checksum associated to the given configuration ID.
+        :param configuration_id: the ID of the configuration
+        :return: the associated checksum or `None` if none stored
         """
 
     @abstractmethod
     def set_checksum(self, configuration_id: str, checksum: str):
         """
-        TODO
-        :param configuration_id:
-        :param checksum:
-        :return:
+        Sets the checksum associated to the given configuration ID.
+        :param configuration_id: the ID of the configuration
+        :param checksum: the checksum associated to the configuration
         """
 
 
-class MemoryStorage(Storage):
+class MemoryChecksumStorage(ChecksumStorage):
     """
-    TODO
+    In-memory storage for configuration -> checksum mappings.
     """
     def __init__(self):
         self._data: Dict[str, str] = {}
@@ -52,9 +51,9 @@ class MemoryStorage(Storage):
         self._data[configuration_id] = checksum
 
 
-class DiskStorage(Storage):
+class DiskChecksumStorage(ChecksumStorage):
     """
-    TODO
+    On-disk storage for configuration -> checksum mappings.
 
     This storage was created to quickly get persistence - concurrent access is unsafe!
     """
@@ -84,4 +83,3 @@ class DiskStorage(Storage):
             file.truncate()
             configuration[configuration_id] = checksum
             file.write(json.dumps(configuration))
-

@@ -25,12 +25,13 @@ def create_docker_setup(
         image_name: str=_RANDOM_NAME, from_image_name: str=EXAMPLE_FROM_IMAGE_NAME) \
         -> Tuple[str, DockerBuildConfiguration]:
     """
-    TODO
-    :param commands:
-    :param context_files:
-    :param image_name:
-    :param from_image_name:
-    :return:
+    Creates a Docker setup.
+    :param commands: commands to put in the Dockerfile. If `None` and `from_image_name` is set, FROM will be set
+    :param context_files: dictionary where the key is the name of the context file and the value is its content
+    :param image_name: name of the image to setup a build configuration for
+    :param from_image_name: the image that the setup one is based off (FROM added to commands if not `None`)
+    :return: tuple where the first element is the directory that acts as the context and the second is the associated
+    build configuration
     """
     if from_image_name is not None:
         from_command = f"{FROM_DOCKER_COMMAND} {from_image_name}"
@@ -64,7 +65,7 @@ def create_docker_setup(
 
 class TestWithDockerBuildConfiguration(unittest.TestCase, metaclass=ABCMeta):
     """
-    TODO
+    Superclass for a test case that uses Docker build configurations.
     """
     def setUp(self):
         self.setup_locations: List[str] = []
@@ -90,4 +91,3 @@ class TestWithDockerBuildConfiguration(unittest.TestCase, metaclass=ABCMeta):
             configurations.append(configuration)
 
         return configurations
-

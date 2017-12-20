@@ -5,7 +5,7 @@ from thriftybuilder.configurations import BuildConfigurationType
 
 class BuildConfigurationContainer(Generic[BuildConfigurationType]):
     """
-    TODO
+    Container of build configurations.
     """
     def __init__(self, managed_build_configurations: Iterable[BuildConfigurationType]=None):
         self._build_configurations: Dict[str, BuildConfigurationType] = {}
@@ -27,35 +27,33 @@ class BuildConfigurationContainer(Generic[BuildConfigurationType]):
 
     def get(self, identifier: str, default: Optional[BuildConfigurationType]=None) -> Optional[BuildConfigurationType]:
         """
-        TODO
-        :param identifier:
-        :param default:
-        :return:
+        Gets the build configuration with the given identifier from this collection, returning the given default if that
+        configuration does not exist.
+        :param identifier: the identifier of the configuration to get
+        :param default: returned if the configuration is not in the container
+        :return: the required configuration or `default`
         """
         return self._build_configurations.get(identifier, default)
 
     def add(self, build_configuration: BuildConfigurationType):
         """
-        TODO
-        :param build_configuration:
-        :return:
+        Add the given build configuration to this collection.
+        :param build_configuration: the build configuration to add
         """
         self._build_configurations[build_configuration.identifier] = build_configuration
 
     def add_all(self, build_configurations: Iterable[BuildConfigurationType]):
         """
-        TODO
-        :param build_configurations:
-        :return:
+        Adds the givend build configurations to this collection.
+        :param build_configurations: the build configurations to add
         """
         for build_configuration in build_configurations:
             self.add(build_configuration)
 
     def remove(self, build_configuration: BuildConfigurationType):
         """
-        TODO
-        :param build_configuration:
-        :return:
-        :raises KeyError:
+        Removes the given build configuration from this container.
+        :param build_configuration: the build configuration to remove
+        :raises KeyError: raised if the build configuration does not exist
         """
         del self._build_configurations[build_configuration.identifier]
