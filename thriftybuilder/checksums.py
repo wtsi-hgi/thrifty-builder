@@ -2,10 +2,10 @@ import os
 from abc import ABCMeta, abstractmethod
 
 from checksumdir import dirhash
-from typing import Generic, Optional, Callable
+from typing import Generic, Callable
 
 from thriftybuilder.common import DEFAULT_ENCODING, BuildConfigurationManager
-from thriftybuilder.configurations import BuildConfigurationType, DockerBuildConfiguration
+from thriftybuilder.models import DockerBuildConfiguration, BuildConfigurationType
 from thriftybuilder.hashers import Hasher, Md5Hasher
 
 

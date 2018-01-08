@@ -4,7 +4,7 @@ import docker
 from typing import Generic, TypeVar, Iterable, Set, Dict
 
 from thriftybuilder.common import BuildConfigurationManager
-from thriftybuilder.configurations import BuildConfigurationType, DockerBuildConfiguration
+from thriftybuilder.models import DockerBuildConfiguration, BuildConfigurationType
 
 BuildResultType = TypeVar("BuildResultType")
 

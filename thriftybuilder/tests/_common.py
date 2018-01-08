@@ -1,13 +1,13 @@
+import dockerfile
 import os
 import shutil
 import unittest
 from abc import ABCMeta
 from tempfile import mkdtemp
 
-import dockerfile
 from typing import List, Dict, Optional, Tuple, Iterable
 
-from thriftybuilder.configurations import DockerBuildConfiguration
+from thriftybuilder.models import DockerBuildConfiguration
 
 DOCKERFILE_PATH = "Dockerfile"
 FROM_DOCKER_COMMAND = "FROM"

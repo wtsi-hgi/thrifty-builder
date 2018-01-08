@@ -1,7 +1,7 @@
 from typing import Iterable
 
 from thriftybuilder.checksums import DockerBuildChecksumCalculator
-from thriftybuilder.configurations import DockerBuildConfiguration
+from thriftybuilder.models import DockerBuildConfiguration
 from thriftybuilder.tests._common import COPY_DOCKER_COMMAND, ADD_DOCKER_COMMAND, RUN_DOCKER_COMMAND
 from thriftybuilder.tests._common import TestWithDockerBuildConfiguration
 from thriftybuilder.tests._examples import EXAMPLE_FILE_NAME_1, EXAMPLE_FILE_CONTENTS_1, \
