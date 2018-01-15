@@ -1,6 +1,5 @@
 import hashlib
 from abc import ABCMeta, abstractmethod
-
 from typing import Union
 
 from thriftybuilder.common import DEFAULT_ENCODING

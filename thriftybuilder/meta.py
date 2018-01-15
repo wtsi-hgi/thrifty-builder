@@ -1,0 +1,3 @@
+PACKAGE_NAME = "thriftybuilder"
+VERSION = "1.0.0b0"
+DESCRIPTION = "TODO"

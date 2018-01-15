@@ -1,5 +1,6 @@
 from setuptools import setup, find_packages
 
+from thriftybuilder.meta import VERSION, DESCRIPTION
 
 try:
     from pypandoc import convert
@@ -11,12 +12,12 @@ except ImportError:
 
 setup(
     name="thriftybuilder",
-    version="0.0.1",
+    version=VERSION,
     packages=find_packages(exclude=["tests"]),
     install_requires=open("requirements.txt", "r").readlines(),
     url="https://github.com/wtsi-hgi/thrifty-builder",
     license="MIT",
-    description="",
+    description=DESCRIPTION,
     long_description=read_markdown("README.md"),
     zip_safe=True
 )

@@ -1,5 +1,6 @@
 import os
 
+from thriftybuilder.meta import PACKAGE_NAME
 from thriftybuilder.models import BuildConfigurationContainer, DockerBuildConfiguration, _ADD_DOCKER_COMMAND, \
     _COPY_DOCKER_COMMAND, DOCKER_IGNORE_FILE
 from thriftybuilder.tests._common import TestWithDockerBuildConfiguration, DOCKERFILE_PATH
@@ -16,13 +17,13 @@ class TestBuildConfigurationContainer(TestWithDockerBuildConfiguration):
         self.container = BuildConfigurationContainer[DockerBuildConfiguration]()
 
     def test_setup_with_items(self):
-        configurations = [self.create_docker_setup(image_name=i)[1] for i in range(5)]
+        configurations = [self.create_docker_setup(image_name=f"{PACKAGE_NAME}-{i}")[1] for i in range(5)]
         container = BuildConfigurationContainer(configurations)
         self.assertCountEqual(configurations, container)
 
     def test_len(self):
         length = 5
-        self.container.add_all([self.create_docker_setup(image_name=i)[1] for i in range(length)])
+        self.container.add_all([self.create_docker_setup(image_name=f"{PACKAGE_NAME}-{i}")[1] for i in range(length)])
         self.assertEqual(length, len(self.container))
 
     def test_index_when_not_added(self):
@@ -55,7 +56,7 @@ class TestBuildConfigurationContainer(TestWithDockerBuildConfiguration):
         self.assertCountEqual([configuration_2], self.container)
 
     def test_add_all(self):
-        configurations = [self.create_docker_setup(image_name=i)[1] for i in range(5)]
+        configurations = [self.create_docker_setup(image_name=f"{PACKAGE_NAME}-{i}")[1] for i in range(5)]
         self.container.add_all(configurations)
         self.assertCountEqual(configurations, self.container)
 

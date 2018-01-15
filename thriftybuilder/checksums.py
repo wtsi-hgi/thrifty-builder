@@ -1,12 +1,12 @@
 import os
 from abc import ABCMeta, abstractmethod
-
-from checksumdir import dirhash
 from typing import Generic, Callable
 
+from checksumdir import dirhash
+
 from thriftybuilder.common import DEFAULT_ENCODING, BuildConfigurationManager
-from thriftybuilder.models import DockerBuildConfiguration, BuildConfigurationType
 from thriftybuilder.hashers import Hasher, Md5Hasher
+from thriftybuilder.models import DockerBuildConfiguration, BuildConfigurationType
 
 
 class ChecksumCalculator(Generic[BuildConfigurationType], metaclass=ABCMeta):

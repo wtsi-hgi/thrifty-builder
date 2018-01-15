@@ -4,6 +4,8 @@ from thriftybuilder.tests._common import RUN_DOCKER_COMMAND
 
 EXAMPLE_IMAGE_NAME = "hello-world-test"
 EXAMPLE_FROM_IMAGE_NAME = "ubuntu:16.04"
+EXAMPLE_IMAGE_NAME_1 = "example-1"
+EXAMPLE_IMAGE_NAME_2 = "example-2"
 
 EXAMPLE_FILE_NAME_1 = "example-1"
 EXAMPLE_FILE_CONTENTS_1 = "testing1"

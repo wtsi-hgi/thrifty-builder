@@ -3,8 +3,8 @@ import os
 from abc import ABCMeta, abstractmethod
 from glob import glob
 from os import walk
-
 from typing import Iterable, Dict, Generic, Optional, Iterator, List, Set, TypeVar
+
 from zgitignore import ZgitIgnore
 
 from thriftybuilder.exceptions import InvalidBuildConfigurationError
@@ -113,6 +113,9 @@ class DockerBuildConfiguration(BuildConfiguration):
         :param dockerfile_location: the location of the Dockerfile that describes how the image is built
         :param context: context in which the image is built
         """
+        if not isinstance(image_name, str):
+            raise ValueError(f"`image_name` must be a string - {type(image_name)} given")
+
         self._identifier = image_name
         self._dockerfile_location = dockerfile_location
         self._context = context if context is not None else os.path.dirname(self.dockerfile_location)
@@ -192,7 +195,7 @@ class BuildConfigurationContainer(Generic[BuildConfigurationType]):
 
     def add_all(self, build_configurations: Iterable[BuildConfigurationType]):
         """
-        Adds the givend build configurations to this collection.
+        Adds the given build configurations to this collection.
         :param build_configurations: the build configurations to add
         """
         for build_configuration in build_configurations:
@@ -205,4 +208,3 @@ class BuildConfigurationContainer(Generic[BuildConfigurationType]):
         :raises KeyError: raised if the build configuration does not exist
         """
         del self._build_configurations[build_configuration.identifier]
-

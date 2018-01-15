@@ -1,5 +1,4 @@
 from abc import ABCMeta
-
 from typing import Generic
 
 from thriftybuilder.models import BuildConfigurationContainer, BuildConfigurationType

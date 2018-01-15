@@ -5,8 +5,9 @@ import docker
 from docker.errors import ImageNotFound
 from docker.models.images import Image
 
-from thriftybuilder.builders import DockerBuilder
+from thriftybuilder.builders import DockerBuilder, CircularDependencyBuildError
 from thriftybuilder.tests._common import TestWithDockerBuildConfiguration
+from thriftybuilder.tests._examples import EXAMPLE_FILE_NAME_1, EXAMPLE_IMAGE_NAME_2, EXAMPLE_IMAGE_NAME_1
 
 
 class TestDockerBuilder(TestWithDockerBuildConfiguration):
@@ -30,9 +31,7 @@ class TestDockerBuilder(TestWithDockerBuildConfiguration):
         _, configuration = self.create_docker_setup()
         assert configuration.identifier not in \
                itertools.chain(*(image.tags for image in self.docker_client.images.list()))
-        build_results = self.docker_builder.build(configuration)
-        self.assertCountEqual({configuration: configuration.identifier}, build_results)
-        self.assertIsInstance(self.docker_client.images.get(configuration.identifier), Image)
+        self.assertRaises(ValueError, self.docker_builder.build, configuration)
 
     def test_build_when_from_image_is_managed(self):
         configurations = self.create_dependent_docker_build_configurations(4)
@@ -42,6 +41,13 @@ class TestDockerBuilder(TestWithDockerBuildConfiguration):
         build_results = self.docker_builder.build(configurations[-1])
         self.assertCountEqual(
             {configuration: configuration.identifier for configuration in configurations}, build_results)
+
+    def test_build_when_circular_dependency(self):
+        configurations = [
+            self.create_docker_setup(image_name=EXAMPLE_IMAGE_NAME_1, from_image_name=EXAMPLE_IMAGE_NAME_2)[1],
+            self.create_docker_setup(image_name=EXAMPLE_IMAGE_NAME_2, from_image_name=EXAMPLE_IMAGE_NAME_1)[1]]
+        self.docker_builder.managed_build_configurations.add_all(configurations)
+        self.assertRaises(CircularDependencyBuildError, self.docker_builder.build_all)
 
     def test_build_all_when_none_managed(self):
         built = self.docker_builder.build_all()

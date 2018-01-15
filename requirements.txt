@@ -2,3 +2,6 @@ dockerfile
 checksumdir
 zgitignore
 docker
+pyyaml
+hgijson
+

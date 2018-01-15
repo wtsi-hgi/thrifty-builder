@@ -4,8 +4,10 @@ import shutil
 import unittest
 from abc import ABCMeta
 from tempfile import mkdtemp
-
 from typing import List, Dict, Optional, Tuple, Iterable
+
+import docker
+from docker.errors import ImageNotFound, NullResource
 
 from thriftybuilder.models import DockerBuildConfiguration
 
@@ -74,6 +76,12 @@ class TestWithDockerBuildConfiguration(unittest.TestCase, metaclass=ABCMeta):
     def tearDown(self):
         for location in self.setup_locations:
             shutil.rmtree(location)
+        docker_client = docker.from_env()
+        for configuration in self.build_configurations:
+            try:
+                docker_client.images.remove(configuration.identifier)
+            except (ImageNotFound, NullResource):
+                pass
 
     def create_docker_setup(self, *args, **kwargs) \
             -> Tuple[str, DockerBuildConfiguration]:
