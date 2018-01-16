@@ -83,8 +83,7 @@ class TestWithDockerBuildConfiguration(unittest.TestCase, metaclass=ABCMeta):
             except (ImageNotFound, NullResource):
                 pass
 
-    def create_docker_setup(self, *args, **kwargs) \
-            -> Tuple[str, DockerBuildConfiguration]:
+    def create_docker_setup(self, *args, **kwargs) -> Tuple[str, DockerBuildConfiguration]:
         setup_location, build_configuration = create_docker_setup(*args, **kwargs)
         self.setup_locations.append(setup_location)
         self.build_configurations.append(build_configuration)

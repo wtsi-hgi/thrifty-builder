@@ -5,8 +5,10 @@ from typing import Generic, TypeVar, Iterable, Set, Dict
 from docker import APIClient
 
 from thriftybuilder._logging import create_logger
+from thriftybuilder.checksums import DockerBuildChecksumCalculator
 from thriftybuilder.common import BuildConfigurationManager
-from thriftybuilder.models import DockerBuildConfiguration, BuildConfigurationType
+from thriftybuilder.models import DockerBuildConfiguration, BuildConfigurationType, BuildConfigurationContainer
+from thriftybuilder.storage import ChecksumStorage, MemoryChecksumStorage
 
 BuildResultType = TypeVar("BuildResultType")
 
@@ -25,6 +27,13 @@ class CircularDependencyBuildError(BuildError):
     """
 
 
+class UnmanagedBuildError(BuildError):
+    """
+    TODO
+    """
+
+
+
 class Builder(Generic[BuildConfigurationType, BuildResultType], BuildConfigurationManager[BuildConfigurationType],
               metaclass=ABCMeta):
     """
@@ -38,6 +47,17 @@ class Builder(Generic[BuildConfigurationType, BuildResultType], BuildConfigurati
         :return: the result of building the given configuration
         """
 
+    def __init__(self, managed_build_configurations: BuildConfigurationContainer[BuildConfigurationType]=None,
+                 checksum_storage: ChecksumStorage=None):
+        """
+        TODO
+        :param managed_build_configurations:
+        :param checksum_storage:
+        """
+        super().__init__(managed_build_configurations)
+        self.checksum_storage = checksum_storage if checksum_storage is not None else MemoryChecksumStorage()
+        self.checksum_calculator = DockerBuildChecksumCalculator()
+
     def build(self, build_configuration: BuildConfigurationType,
               allowed_builds: Iterable[BuildConfigurationType]=None, _building: Set[BuildConfigurationType]=None) \
             -> Dict[BuildConfigurationType, BuildResultType]:
@@ -46,27 +66,34 @@ class Builder(Generic[BuildConfigurationType, BuildResultType], BuildConfigurati
         :param build_configuration: the configuration to build
         :param allowed_builds: dependencies that can get built in order to build the configuration. If set
         to `None`, all dependencies will be built (default)
-        :param _building: TODO
+        :param _building: internal use only (tracks build stack to detect circular dependencies)
         :return: mapping between built configurations and their associated build result
-        :raises ValueError: when requested to build unmanaged configuration
+        :raises UnmanagedBuildError: when requested to potentially build an unmanaged build
         :raises CircularDependencyBuildError: when circular dependency in FROM image
         """
         if build_configuration not in self.managed_build_configurations:
-            raise ValueError(f"Build configuration {build_configuration} cannot be built as it is not in the set of "
-                             f"managed build configurations")
+            raise UnmanagedBuildError(f"Build configuration {build_configuration} cannot be built as it is not in the "
+                                      f"set of managed build configurations")
+
+        allowed_builds = set(allowed_builds if allowed_builds is not None else self.managed_build_configurations)
+        allowed_builds.add(build_configuration)
+        if not allowed_builds.issubset(self.managed_build_configurations):
+            raise UnmanagedBuildError(
+                f"Allowed builds is not a subset of managed build configurations. Unmanaged builds in `allowed_build`: "
+                f"{allowed_builds.difference(self.managed_build_configurations)}")
 
         _building = _building if _building is not None else set()
 
-        allowed_builds = set(allowed_builds if allowed_builds is not None
-                             else self.managed_build_configurations)
-        allowed_builds.add(build_configuration)
-        build_results: OrderedDict[BuildConfigurationType: BuildResultType] = OrderedDict()
+        if self._already_up_to_date(build_configuration):
+            return {}
 
+        build_results: OrderedDict[BuildConfigurationType: BuildResultType] = OrderedDict()
         for required_build_configuration_identifier in build_configuration.requires:
             required_build_configuration = self.managed_build_configurations.get(
                 required_build_configuration_identifier, default=None)
 
-            if required_build_configuration in allowed_builds:
+            if required_build_configuration in allowed_builds \
+                    and not self._already_up_to_date(required_build_configuration):
                 left_allowed_builds = allowed_builds - set(build_results.keys())
 
                 if required_build_configuration in _building:
@@ -105,6 +132,20 @@ class Builder(Generic[BuildConfigurationType, BuildResultType], BuildConfigurati
 
         logger.info(f"Built: {all_build_results}")
         return all_build_results
+
+    def _already_up_to_date(self, build_configuration: BuildConfigurationType) -> bool:
+        """
+        Gets whether the image built from the given build configuration is already up-to-date according to the checksum
+        store.
+        :param build_configuration: the configuration to check
+        :return: whether the image associated to the configuration is already up to date
+        """
+        existing_checksum = self.checksum_storage.get_checksum(build_configuration.identifier)
+        if existing_checksum is None:
+            return False
+
+        current_checksum = self.checksum_calculator.calculate_checksum(build_configuration)
+        return existing_checksum == current_checksum
 
 
 class DockerBuilder(Builder[DockerBuildConfiguration, str]):

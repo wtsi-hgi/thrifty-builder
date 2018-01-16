@@ -42,8 +42,6 @@ class TestMain(TestWithDockerBuildConfiguration):
         self.assertCountEqual(
             json.loads(result.stdout), {configuration.identifier for configuration in configuration_container})
 
-
-
     def _file_configuration_to_file(self, file_configuration: FileConfiguration) -> str:
         """
         TODO
