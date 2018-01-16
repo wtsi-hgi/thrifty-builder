@@ -3,5 +3,5 @@ checksumdir
 zgitignore
 docker
 pyyaml
-hgijson
+hgijson>=3.0.0
 
