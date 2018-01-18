@@ -5,6 +5,8 @@ from copy import copy
 
 from typing import Optional, Dict, Mapping
 
+from thriftybuilder.exceptions import MissingOptionalDependencyError
+
 
 class ChecksumStorage(metaclass=ABCMeta):
     """
@@ -103,3 +105,43 @@ class DiskChecksumStorage(ChecksumStorage):
             file.truncate()
             configuration[configuration_id] = checksum
             file.write(json.dumps(configuration))
+
+
+class ConsulChecksumStorage(ChecksumStorage):
+    """
+    TODO
+
+    Not safe to use on same key in parallel.
+    """
+    TEXT_ENCODING = "utf-8"
+
+    def __init__(self, data_key: str, consul_client=None, *args, **kwargs):
+        try:
+            from consul import Consul
+        except ImportError as e:
+            raise MissingOptionalDependencyError(
+                "You must install `python-consul` separately to use this type of storage") from e
+
+        self.data_key = data_key
+        self._consul_client = consul_client if consul_client is not None else Consul()
+        super().__init__(*args, **kwargs)
+
+    def get_checksum(self, configuration_id: str) -> Optional[str]:
+        return self.get_all_checksums().get(configuration_id)
+
+    def get_all_checksums(self) -> Dict[str, str]:
+        value = self._consul_client.kv.get(self.data_key)[1]
+        if value is None:
+            return {}
+        value = value["Value"].decode(ConsulChecksumStorage.TEXT_ENCODING)
+        return json.loads(value)
+
+    def set_checksum(self, configuration_id: str, checksum: str):
+        value = self.get_all_checksums()
+        value[configuration_id] = checksum
+        self._consul_client.kv.put(self.data_key, json.dumps(value, sort_keys=True))
+
+    def set_all_checksums(self, configuration_checksum_mappings: Mapping[str, str]):
+        value = self.get_all_checksums()
+        value.update(configuration_checksum_mappings)
+        self._consul_client.kv.put(self.data_key, json.dumps(value, sort_keys=True))

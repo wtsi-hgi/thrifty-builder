@@ -11,3 +11,10 @@ class InvalidBuildConfigurationError(ThriftyBuilderBaseError):
     """
     Exception raised if a build configuration is invalid.
     """
+
+
+class MissingOptionalDependencyError(ThriftyBuilderBaseError):
+    """
+    Exception raised if option dependency is required but not installed.
+    """
+

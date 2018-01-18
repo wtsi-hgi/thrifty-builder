@@ -3,7 +3,9 @@ import unittest
 from abc import ABCMeta, abstractmethod
 from tempfile import NamedTemporaryFile
 
-from thriftybuilder.storage import ChecksumStorage, MemoryChecksumStorage, DiskChecksumStorage
+from useintest.predefined.consul import ConsulServiceController
+
+from thriftybuilder.storage import ChecksumStorage, MemoryChecksumStorage, DiskChecksumStorage, ConsulChecksumStorage
 
 EXAMPLE_1_CONFIGURATION_ID = "example-1"
 EXAMPLE_1_CHECKSUM = "c02696b94a1787cdbe072931225d4dbc"
@@ -80,6 +82,23 @@ class TestDiskChecksumStorage(_TestChecksumStorage):
 
     def create_storage(self) -> ChecksumStorage:
         return DiskChecksumStorage(self._temp_file)
+
+
+class TestConsulChecksumStorage(_TestChecksumStorage):
+    """
+    Tests for `ConsulChecksumStorage`.
+    """
+    def setUp(self):
+        self._consul_controller = ConsulServiceController()
+        self.consul_service = self._consul_controller.start_service()
+        self.consul_client = self.consul_service.create_consul_client()
+        super().setUp()
+
+    def tearDown(self):
+        self._consul_controller.stop_service(self.consul_service)
+
+    def create_storage(self) -> ChecksumStorage:
+        return ConsulChecksumStorage("test-key", consul_client=self.consul_client)
 
 
 del _TestChecksumStorage
