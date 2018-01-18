@@ -5,7 +5,7 @@ from typing import Generic, TypeVar, Iterable, Set, Dict
 from docker import APIClient
 
 from thriftybuilder._logging import create_logger
-from thriftybuilder.checksums import DockerBuildChecksumCalculator
+from thriftybuilder.checksums import DockerBuildChecksumCalculator, ChecksumCalculator
 from thriftybuilder.common import BuildConfigurationManager
 from thriftybuilder.models import DockerBuildConfiguration, BuildConfigurationType, BuildConfigurationContainer
 from thriftybuilder.storage import ChecksumStorage, MemoryChecksumStorage
@@ -48,15 +48,17 @@ class Builder(Generic[BuildConfigurationType, BuildResultType], BuildConfigurati
         """
 
     def __init__(self, managed_build_configurations: BuildConfigurationContainer[BuildConfigurationType]=None,
-                 checksum_storage: ChecksumStorage=None):
+                 checksum_storage: ChecksumStorage=None, checksum_calculator: DockerBuildChecksumCalculator=None):
         """
         TODO
         :param managed_build_configurations:
         :param checksum_storage:
+        :param checksum_calculator:
         """
         super().__init__(managed_build_configurations)
         self.checksum_storage = checksum_storage if checksum_storage is not None else MemoryChecksumStorage()
-        self.checksum_calculator = DockerBuildChecksumCalculator()
+        self.checksum_calculator = checksum_calculator if checksum_calculator is not None \
+            else DockerBuildChecksumCalculator()
 
     def build(self, build_configuration: BuildConfigurationType,
               allowed_builds: Iterable[BuildConfigurationType]=None, _building: Set[BuildConfigurationType]=None) \

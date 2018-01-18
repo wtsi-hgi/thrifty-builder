@@ -5,6 +5,8 @@ from copy import copy
 
 from typing import Optional, Dict
 
+from hgijson import JsonPropertyMapping, MappingJSONEncoderClassBuilder, MappingJSONDecoderClassBuilder
+
 
 class ChecksumStorage(metaclass=ABCMeta):
     """
@@ -32,6 +34,12 @@ class ChecksumStorage(metaclass=ABCMeta):
         :param configuration_id: the ID of the configuration
         :param checksum: the checksum associated to the configuration
         """
+
+    def __str__(self) -> str:
+        return json.dumps(self, cls=ChecksumStorageJSONEncoder, sort_keys=True)
+
+    def __hash__(self) -> hash:
+        return hash(str(self))
 
 
 class MemoryChecksumStorage(ChecksumStorage):
@@ -83,3 +91,19 @@ class DiskChecksumStorage(ChecksumStorage):
             file.truncate()
             configuration[configuration_id] = checksum
             file.write(json.dumps(configuration))
+
+
+_storage_configuration_mappings = [
+    JsonPropertyMapping(
+        "checksums", object_property_getter=lambda obj: obj.get_all(),
+        object_property_setter=lambda obj, value: [obj.set_checksum(*x) for x in value.items()] and None)
+]
+ChecksumStorageJSONEncoder = MappingJSONEncoderClassBuilder(
+    ChecksumStorage, _storage_configuration_mappings).build()
+ChecksumStorageJSONDecoder = MappingJSONDecoderClassBuilder(
+    ChecksumStorage, _storage_configuration_mappings).build()
+
+MemoryChecksumStorageJSONEncoder = MappingJSONEncoderClassBuilder(
+    MemoryChecksumStorage, superclasses=(ChecksumStorageJSONEncoder, )).build()
+MemoryChecksumStorageJSONDecoder = MappingJSONDecoderClassBuilder(
+    MemoryChecksumStorage, superclasses=(ChecksumStorageJSONDecoder, )).build()

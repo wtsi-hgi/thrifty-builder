@@ -13,7 +13,7 @@ DOCKER_IMAGE_CONTEXT_PROPERTY = "context"
 
 class FileConfiguration:
     """
-    Configuration from file.
+    Image build configuration from file.
     """
     def __init__(self, docker_build_configurations: BuildConfigurationContainer[DockerBuildConfiguration]):
         self.docker_build_configurations = docker_build_configurations

@@ -20,12 +20,12 @@ class ChecksumCalculator(Generic[BuildConfigurationType], metaclass=ABCMeta):
         :return: the checksum associated to the configuration
         """
 
-    def __init__(self, hasher_generator: Callable[[], Hasher]=lambda: Md5Hasher()):
+    def __init__(self, hasher_generator: Callable[[], Hasher]=lambda: Md5Hasher(), *args, **kwargs):
         """
         Constructor.
         :param hasher_generator: hash generator
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.hasher_generator = hasher_generator
 
     def calculate_used_files_checksum(self, build_configuration: DockerBuildConfiguration) -> str:
