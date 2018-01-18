@@ -38,4 +38,4 @@ class Md5Hasher(Hasher):
         return self
 
     def generate(self) -> str:
-        return self._md5.hexdigest().encode(DEFAULT_ENCODING)
+        return self._md5.hexdigest()

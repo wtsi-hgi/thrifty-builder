@@ -1,7 +1,7 @@
 from typing import Iterable
 
 from thriftybuilder.checksums import DockerBuildChecksumCalculator
-from thriftybuilder.models import DockerBuildConfiguration
+from thriftybuilder.models import DockerBuildConfiguration, BuildConfigurationContainer
 from thriftybuilder.tests._common import COPY_DOCKER_COMMAND, ADD_DOCKER_COMMAND, RUN_DOCKER_COMMAND
 from thriftybuilder.tests._common import TestWithDockerBuildConfiguration
 from thriftybuilder.tests._examples import EXAMPLE_FILE_NAME_1, EXAMPLE_FILE_CONTENTS_1, \
@@ -79,6 +79,12 @@ class TestDockerBuildChecksumCalculator(TestWithDockerBuildConfiguration):
         self.checksum_calculator.managed_build_configurations.add(grandparent_configuration_2)
         checksum_2 = self.checksum_calculator.calculate_checksum(configuration)
         self.assertNotEqual(checksum_1, checksum_2)
+
+    def test_calculate_checksum_type(self):
+        configuration = self.create_docker_setup()[1]
+        calculator = DockerBuildChecksumCalculator(
+            managed_build_configurations=BuildConfigurationContainer([configuration]))
+        self.assertIsInstance(calculator.calculate_checksum(configuration), str)
 
     def _assert_different_checksums(self, configurations: Iterable[DockerBuildConfiguration]):
         """
