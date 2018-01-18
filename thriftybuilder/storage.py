@@ -3,9 +3,7 @@ import os
 from abc import ABCMeta, abstractmethod
 from copy import copy
 
-from typing import Optional, Dict
-
-from hgijson import JsonPropertyMapping, MappingJSONEncoderClassBuilder, MappingJSONDecoderClassBuilder
+from typing import Optional, Dict, Mapping
 
 
 class ChecksumStorage(metaclass=ABCMeta):
@@ -13,18 +11,18 @@ class ChecksumStorage(metaclass=ABCMeta):
     Store of mappings between configurations, identified by ID, and checksums.
     """
     @abstractmethod
-    def get_all(self) -> Dict[str, str]:
-        """
-        Gets all of the identifer -> checksum mappings.
-        :return: all stored mappings
-        """
-
-    @abstractmethod
     def get_checksum(self, configuration_id: str) -> Optional[str]:
         """
         Gets the checksum associated to the given configuration ID.
         :param configuration_id: the ID of the configuration
         :return: the associated checksum or `None` if none stored
+        """
+
+    @abstractmethod
+    def get_all_checksums(self) -> Dict[str, str]:
+        """
+        Gets all of the identifer -> checksum mappings.
+        :return: all stored mappings
         """
 
     @abstractmethod
@@ -35,25 +33,38 @@ class ChecksumStorage(metaclass=ABCMeta):
         :param checksum: the checksum associated to the configuration
         """
 
+    def __init__(self, configuration_checksum_mappings: Mapping[str, str]=None):
+        if configuration_checksum_mappings is not None:
+            self.set_all_checksums(configuration_checksum_mappings)
+
     def __str__(self) -> str:
-        return json.dumps(self, cls=ChecksumStorageJSONEncoder, sort_keys=True)
+        return json.dumps(self.get_all_checksums(), sort_keys=True)
 
     def __hash__(self) -> hash:
         return hash(str(self))
+
+    def set_all_checksums(self, configuration_checksum_mappings: Mapping[str, str]):
+        """
+        TODO
+        :param configuration_checksum_mappings:
+        """
+        for configuration_id, checksum in configuration_checksum_mappings.items():
+            self.set_checksum(configuration_id, checksum)
 
 
 class MemoryChecksumStorage(ChecksumStorage):
     """
     In-memory storage for configuration -> checksum mappings.
     """
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self._data: Dict[str, str] = {}
-
-    def get_all(self) -> Dict[str, str]:
-        return copy(self._data)
+        super().__init__(*args, **kwargs)
 
     def get_checksum(self, configuration_id: str) -> Optional[str]:
         return self._data.get(configuration_id, None)
+
+    def get_all_checksums(self) -> Dict[str, str]:
+        return copy(self._data)
 
     def set_checksum(self, configuration_id: str, checksum: str):
         self._data[configuration_id] = checksum
@@ -65,18 +76,19 @@ class DiskChecksumStorage(ChecksumStorage):
 
     This storage was created to quickly get persistence - concurrent access is unsafe!
     """
-    def __init__(self, storage_file_location: str):
+    def __init__(self, storage_file_location: str, *args, **kwargs):
         self.storage_file_location = storage_file_location
+        super().__init__(*args, **kwargs)
 
-    def get_all(self) -> Dict[str, str]:
+    def get_checksum(self, configuration_id: str) -> Optional[str]:
+        return self.get_all_checksums().get(configuration_id, None)
+
+    def get_all_checksums(self) -> Dict[str, str]:
         if not os.path.exists(self.storage_file_location):
             return {}
 
         with open(self.storage_file_location, "r") as file:
             return json.load(file)
-
-    def get_checksum(self, configuration_id: str) -> Optional[str]:
-        return self.get_all().get(configuration_id, None)
 
     def set_checksum(self, configuration_id: str, checksum: str):
         configuration = None
@@ -91,19 +103,3 @@ class DiskChecksumStorage(ChecksumStorage):
             file.truncate()
             configuration[configuration_id] = checksum
             file.write(json.dumps(configuration))
-
-
-_storage_configuration_mappings = [
-    JsonPropertyMapping(
-        "checksums", object_property_getter=lambda obj: obj.get_all(),
-        object_property_setter=lambda obj, value: [obj.set_checksum(*x) for x in value.items()] and None)
-]
-ChecksumStorageJSONEncoder = MappingJSONEncoderClassBuilder(
-    ChecksumStorage, _storage_configuration_mappings).build()
-ChecksumStorageJSONDecoder = MappingJSONDecoderClassBuilder(
-    ChecksumStorage, _storage_configuration_mappings).build()
-
-MemoryChecksumStorageJSONEncoder = MappingJSONEncoderClassBuilder(
-    MemoryChecksumStorage, superclasses=(ChecksumStorageJSONEncoder, )).build()
-MemoryChecksumStorageJSONDecoder = MappingJSONDecoderClassBuilder(
-    MemoryChecksumStorage, superclasses=(ChecksumStorageJSONDecoder, )).build()

@@ -1,22 +1,21 @@
 import json
 import logging
-from argparse import ArgumentParser, Namespace
+import sys
+from argparse import ArgumentParser
 from enum import Enum, unique
 from json import JSONDecodeError
 from typing import List, NamedTuple, Dict, Optional
-
-import sys
 
 from thriftybuilder.builders import DockerBuilder
 from thriftybuilder.cli.configuration import read_file_configuration
 from thriftybuilder.exceptions import ThriftyBuilderBaseError
 from thriftybuilder.meta import DESCRIPTION, VERSION, PACKAGE_NAME
-from thriftybuilder.storage import MemoryChecksumStorageJSONDecoder
+from thriftybuilder.storage import MemoryChecksumStorage
 
 VERBOSE_CLI_SHORT_PARAMETER = "v"
 CONFIGURATION_LOCATION_PARAMETER = "configuration-location"
 DEFAULT_LOG_VERBOSITY = logging.WARN
-CHECKSUM_SOURCE_LONG_PARAMETER = "checksums-from"
+CHECKSUM_SOURCE_LOCAL_PATH_LONG_PARAMETER = "checksums-from-path"
 
 
 @unique
@@ -25,7 +24,7 @@ class ChecksumSource(Enum):
     TODO
     """
     STDIN = "stdin"
-    # LOCAL = "local"
+    LOCAL = "local"
 
 
 class InvalidCliArgumentError(ThriftyBuilderBaseError):
@@ -47,6 +46,7 @@ class CliConfiguration(NamedTuple):
     configuration_location: str
     log_verbosity: int = DEFAULT_LOG_VERBOSITY
     checksum_source: ChecksumSource = ChecksumSource.STDIN
+    checksum_local_path: str = None
 
 
 def _create_parser() -> ArgumentParser:
@@ -55,13 +55,12 @@ def _create_parser() -> ArgumentParser:
     :return: the argument parser
     """
     parser = ArgumentParser(description=f"{DESCRIPTION} (v{VERSION})")
-    parser.add_argument(
-        f"-{VERBOSE_CLI_SHORT_PARAMETER}", action="count", default=0,
-        help="increase the level of log verbosity (add multiple increase further)")
-    parser.add_argument(f"--{CHECKSUM_SOURCE_LONG_PARAMETER}", type=str, default=ChecksumSource.STDIN,
-                        choices=[source.value for source in ChecksumSource], help="source of checksums")
-    parser.add_argument(CONFIGURATION_LOCATION_PARAMETER, type=str, help="location of configuration")
-
+    parser.add_argument(f"-{VERBOSE_CLI_SHORT_PARAMETER}", action="count", default=0,
+                        help="increase the level of log verbosity (add multiple increase further)")
+    parser.add_argument(f"--{CHECKSUM_SOURCE_LOCAL_PATH_LONG_PARAMETER}", type=str,
+                        help="TODO")
+    parser.add_argument(CONFIGURATION_LOCATION_PARAMETER, type=str,
+                        help="location of configuration")
     return parser
 
 
@@ -86,10 +85,16 @@ def parse_cli_configuration(arguments: List[str]) -> CliConfiguration:
     :return: parsed configuration
     """
     parsed_arguments = {x.replace("_", "-"): y for x, y in vars(_create_parser().parse_args(arguments)).items()}
-    checksum_source = parsed_arguments.get(CHECKSUM_SOURCE_LONG_PARAMETER)
+    checksum_source = ChecksumSource.STDIN
+
+    checksum_local_path = parsed_arguments.get(CHECKSUM_SOURCE_LOCAL_PATH_LONG_PARAMETER)
+    if checksum_local_path is not None:
+        checksum_source = ChecksumSource.LOCAL
+
     return CliConfiguration(log_verbosity=_get_verbosity(parsed_arguments),
-                            checksum_source=ChecksumSource(checksum_source),
-                            configuration_location=parsed_arguments[CONFIGURATION_LOCATION_PARAMETER])
+                            checksum_source=checksum_source,
+                            configuration_location=parsed_arguments[CONFIGURATION_LOCATION_PARAMETER],
+                            checksum_local_path=checksum_local_path)
 
 
 def main(cli_arguments: List[str], stdin_content: Optional[str]=None):
@@ -105,12 +110,20 @@ def main(cli_arguments: List[str], stdin_content: Optional[str]=None):
     if cli_configuration.log_verbosity:
         logging.getLogger(PACKAGE_NAME).setLevel(cli_configuration.log_verbosity)
 
-    checksum_storage = None
+    checksums_as_json_string = None
     if cli_configuration.checksum_source == ChecksumSource.STDIN and stdin_content is not None:
+        checksums_as_json_string = stdin_content
+    elif cli_configuration.checksum_source == ChecksumSource.LOCAL:
+        with open(cli_configuration.checksum_local_path, "r") as file:
+            checksums_as_json_string = file.read()
+
+    checksum_storage = MemoryChecksumStorage()
+    if checksums_as_json_string is not None:
         try:
-            checksum_storage = json.loads(stdin_content, cls=MemoryChecksumStorageJSONDecoder)
+            checksums_as_json = json.loads(checksums_as_json_string)
         except JSONDecodeError as e:
-            raise UnreadableChecksumStorageError(f"stdin: {stdin_content}") from e
+            raise UnreadableChecksumStorageError(checksums_as_json_string) from e
+        checksum_storage.set_all_checksums(checksums_as_json)
 
     docker_builder = DockerBuilder(
         managed_build_configurations=configuration.docker_build_configurations, checksum_storage=checksum_storage)
