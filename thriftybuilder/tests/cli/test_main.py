@@ -8,15 +8,17 @@ import yaml
 from capturewrap import CaptureWrapBuilder
 
 from thriftybuilder.builders import DockerBuilder
-from thriftybuilder.checksums import DockerBuildChecksumCalculator
+from thriftybuilder.checksums import DockerChecksumCalculator
 from thriftybuilder.cli.configuration import FileConfiguration, FileConfigurationJSONEncoder
-from thriftybuilder.cli.main import main, CHECKSUM_SOURCE_LOCAL_PATH_LONG_PARAMETER
-from thriftybuilder.models import BuildConfigurationContainer, DockerBuildConfiguration
+from thriftybuilder.cli.main import main, CHECKSUM_SOURCE_LOCAL_PATH_LONG_PARAMETER, \
+    CHECKSUM_SOURCE_CONSUL_KEY_LONG_PARAMETER
+from thriftybuilder.models import DockerBuildConfiguration
+from thriftybuilder.containers import BuildConfigurationContainer
 from thriftybuilder.storage import MemoryChecksumStorage
-from thriftybuilder.tests._common import TestWithDockerBuildConfiguration
+from thriftybuilder.tests._common import TestWithDockerBuildConfiguration, TestWithConsulService
 
 
-class TestMain(TestWithDockerBuildConfiguration):
+class TestMain(TestWithDockerBuildConfiguration, TestWithConsulService):
     """
     TODO
     """
@@ -67,6 +69,19 @@ class TestMain(TestWithDockerBuildConfiguration):
             expected = {configuration.identifier for configuration in self.configurations
                         if configuration != self.pre_built_configuration}
             self.assertEqual(json.loads(result.stdout).keys(), expected)
+
+    def test_build_when_consul_checksums(self):
+        test_key = "example-key"
+        checksums_as_json = json.dumps(self.checksum_storage.get_all_checksums())
+        self.consul_client.kv.put(test_key, checksums_as_json)
+        self.consul_service.setup_environment()
+
+        result = self._captured_main([
+            f"--{CHECKSUM_SOURCE_CONSUL_KEY_LONG_PARAMETER}", test_key, self.file_configuration_location])
+
+        expected = {configuration.identifier for configuration in self.configurations
+                    if configuration != self.pre_built_configuration}
+        self.assertEqual(json.loads(result.stdout).keys(), expected)
 
     def _file_configuration_to_file(self, file_configuration: FileConfiguration) -> str:
         """

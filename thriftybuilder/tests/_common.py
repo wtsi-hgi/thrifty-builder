@@ -7,7 +7,9 @@ from tempfile import mkdtemp
 from typing import List, Dict, Optional, Tuple, Iterable
 
 import docker
+from consul import Consul
 from docker.errors import ImageNotFound, NullResource
+from useintest.predefined.consul import ConsulServiceController, ConsulDockerisedService
 
 from thriftybuilder.models import DockerBuildConfiguration
 
@@ -70,10 +72,12 @@ class TestWithDockerBuildConfiguration(unittest.TestCase, metaclass=ABCMeta):
     Superclass for a test case that uses Docker build configurations.
     """
     def setUp(self):
+        super().setUp()
         self.setup_locations: List[str] = []
         self.build_configurations: List[DockerBuildConfiguration] = []
 
     def tearDown(self):
+        super().tearDown()
         for location in self.setup_locations:
             shutil.rmtree(location)
         docker_client = docker.from_env()
@@ -98,3 +102,30 @@ class TestWithDockerBuildConfiguration(unittest.TestCase, metaclass=ABCMeta):
             configurations.append(configuration)
 
         return configurations
+
+
+class TestWithConsulService(unittest.TestCase, metaclass=ABCMeta):
+    """
+    Base class for tests that use a Consul service.
+    """
+    @property
+    def consul_service(self) -> ConsulDockerisedService:
+        if self._consul_service is None:
+            self._consul_service = self._consul_controller.start_service()
+        return self._consul_service
+
+    @property
+    def consul_client(self) -> Consul:
+        if self._consul_client is None:
+            self._consul_client = self.consul_service.create_consul_client()
+        return self._consul_client
+
+    def setUp(self):
+        self._consul_controller = ConsulServiceController()
+        self._consul_service = None
+        self._consul_client = None
+        super().setUp()
+
+    def tearDown(self):
+        if self._consul_service is not None:
+            self._consul_controller.stop_service(self._consul_service)

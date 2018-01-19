@@ -1,20 +1,22 @@
+import unittest
 from typing import Iterable
 
-from thriftybuilder.checksums import DockerBuildChecksumCalculator
-from thriftybuilder.models import DockerBuildConfiguration, BuildConfigurationContainer
+from thriftybuilder.checksums import DockerChecksumCalculator
+from thriftybuilder.models import DockerBuildConfiguration
+from thriftybuilder.containers import BuildConfigurationContainer
 from thriftybuilder.tests._common import COPY_DOCKER_COMMAND, ADD_DOCKER_COMMAND, RUN_DOCKER_COMMAND
 from thriftybuilder.tests._common import TestWithDockerBuildConfiguration
 from thriftybuilder.tests._examples import EXAMPLE_FILE_NAME_1, EXAMPLE_FILE_CONTENTS_1, \
     EXAMPLE_FILE_NAME_2, EXAMPLE_FILE_CONTENTS_2, EXAMPLE_RUN_COMMAND, EXAMPLE_IMAGE_NAME
 
 
-class TestDockerBuildChecksumCalculator(TestWithDockerBuildConfiguration):
+class TestDockerChecksumCalculator(TestWithDockerBuildConfiguration):
     """
-    Tests for `DockerBuildChecksumCalculator`.
+    Tests for `DockerChecksumCalculator`.
     """
     def setUp(self):
         super().setUp()
-        self.checksum_calculator = DockerBuildChecksumCalculator()
+        self.checksum_calculator = DockerChecksumCalculator()
 
     def test_calculate_checksum_with_configurations(self):
         configurations = [
@@ -82,7 +84,7 @@ class TestDockerBuildChecksumCalculator(TestWithDockerBuildConfiguration):
 
     def test_calculate_checksum_type(self):
         configuration = self.create_docker_setup()[1]
-        calculator = DockerBuildChecksumCalculator(
+        calculator = DockerChecksumCalculator(
             managed_build_configurations=BuildConfigurationContainer([configuration]))
         self.assertIsInstance(calculator.calculate_checksum(configuration), str)
 
@@ -101,3 +103,7 @@ class TestDockerBuildChecksumCalculator(TestWithDockerBuildConfiguration):
             i += 1
         if len(checksums) != i:
             raise AssertionError()
+
+
+if __name__ == "__main__":
+    unittest.main()

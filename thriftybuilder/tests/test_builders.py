@@ -3,11 +3,10 @@ import unittest
 
 import docker
 from docker.errors import ImageNotFound
-from docker.models.images import Image
 
 from thriftybuilder.builders import DockerBuilder, CircularDependencyBuildError, UnmanagedBuildError
 from thriftybuilder.tests._common import TestWithDockerBuildConfiguration
-from thriftybuilder.tests._examples import EXAMPLE_FILE_NAME_1, EXAMPLE_IMAGE_NAME_2, EXAMPLE_IMAGE_NAME_1
+from thriftybuilder.tests._examples import EXAMPLE_IMAGE_NAME_2, EXAMPLE_IMAGE_NAME_1
 
 
 class TestDockerBuilder(TestWithDockerBuildConfiguration):

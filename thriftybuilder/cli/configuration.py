@@ -3,7 +3,8 @@ import json
 import yaml
 from hgijson import JsonPropertyMapping, MappingJSONEncoderClassBuilder, MappingJSONDecoderClassBuilder
 
-from thriftybuilder.models import BuildConfigurationContainer, DockerBuildConfiguration
+from thriftybuilder.models import DockerBuildConfiguration
+from thriftybuilder.containers import BuildConfigurationContainer
 
 DOCKER_IMAGES_PROPERTY = "docker_images"
 DOCKER_IMAGE_NAME_PROPERTY = "name"

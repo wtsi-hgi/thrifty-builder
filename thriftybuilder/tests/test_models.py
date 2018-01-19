@@ -1,8 +1,10 @@
 import os
+import unittest
 
 from thriftybuilder.meta import PACKAGE_NAME
-from thriftybuilder.models import BuildConfigurationContainer, DockerBuildConfiguration, _ADD_DOCKER_COMMAND, \
+from thriftybuilder.models import DockerBuildConfiguration, _ADD_DOCKER_COMMAND, \
     _COPY_DOCKER_COMMAND, DOCKER_IGNORE_FILE
+from thriftybuilder.containers import BuildConfigurationContainer
 from thriftybuilder.tests._common import TestWithDockerBuildConfiguration, DOCKERFILE_PATH
 from thriftybuilder.tests._examples import EXAMPLE_IMAGE_NAME, EXAMPLE_FROM_IMAGE_NAME, EXAMPLE_FILE_NAME_1
 
@@ -153,3 +155,7 @@ class TestDockerBuildConfiguration(TestWithDockerBuildConfiguration):
 
         self.assertCountEqual((f"{configuration.context}/{file_name}" for file_name in files_to_ignore),
                               configuration.get_ignored_files())
+
+
+if __name__ == "__main__":
+    unittest.main()

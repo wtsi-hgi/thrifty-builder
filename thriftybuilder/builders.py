@@ -5,9 +5,9 @@ from typing import Generic, TypeVar, Iterable, Set, Dict
 from docker import APIClient
 
 from thriftybuilder._logging import create_logger
-from thriftybuilder.checksums import DockerBuildChecksumCalculator, ChecksumCalculator
+from thriftybuilder.checksums import DockerChecksumCalculator, ChecksumCalculator
 from thriftybuilder.common import BuildConfigurationManager
-from thriftybuilder.models import DockerBuildConfiguration, BuildConfigurationType, BuildConfigurationContainer
+from thriftybuilder.models import DockerBuildConfiguration, BuildConfigurationType
 from thriftybuilder.storage import ChecksumStorage, MemoryChecksumStorage
 
 BuildResultType = TypeVar("BuildResultType")
@@ -29,9 +29,8 @@ class CircularDependencyBuildError(BuildError):
 
 class UnmanagedBuildError(BuildError):
     """
-    TODO
+    Error raised when illegally trying to use an unmanaged build.
     """
-
 
 
 class Builder(Generic[BuildConfigurationType, BuildResultType], BuildConfigurationManager[BuildConfigurationType],
@@ -47,8 +46,9 @@ class Builder(Generic[BuildConfigurationType, BuildResultType], BuildConfigurati
         :return: the result of building the given configuration
         """
 
-    def __init__(self, managed_build_configurations: BuildConfigurationContainer[BuildConfigurationType]=None,
-                 checksum_storage: ChecksumStorage=None, checksum_calculator: DockerBuildChecksumCalculator=None):
+    def __init__(self, managed_build_configurations: Iterable[BuildConfigurationType]=None,
+                 checksum_storage: ChecksumStorage=None,
+                 checksum_calculator: ChecksumCalculator[BuildConfigurationType]=None):
         """
         TODO
         :param managed_build_configurations:
@@ -57,8 +57,7 @@ class Builder(Generic[BuildConfigurationType, BuildResultType], BuildConfigurati
         """
         super().__init__(managed_build_configurations)
         self.checksum_storage = checksum_storage if checksum_storage is not None else MemoryChecksumStorage()
-        self.checksum_calculator = checksum_calculator if checksum_calculator is not None \
-            else DockerBuildChecksumCalculator()
+        self.checksum_calculator = checksum_calculator
 
     def build(self, build_configuration: BuildConfigurationType,
               allowed_builds: Iterable[BuildConfigurationType]=None, _building: Set[BuildConfigurationType]=None) \
@@ -154,8 +153,11 @@ class DockerBuilder(Builder[DockerBuildConfiguration, str]):
     """
     Builder of Docker images.
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, managed_build_configurations: Iterable[BuildConfigurationType]=None,
+                 checksum_storage: ChecksumStorage=None,
+                 checksum_calculator: ChecksumCalculator[DockerBuildConfiguration]=None):
+        checksum_calculator = checksum_calculator if checksum_calculator is not None else DockerChecksumCalculator()
+        super().__init__(managed_build_configurations, checksum_storage, checksum_calculator)
         self._docker_client = APIClient()
 
     def __del__(self):

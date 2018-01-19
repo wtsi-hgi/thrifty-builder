@@ -1,6 +1,6 @@
 import os
 from abc import ABCMeta, abstractmethod
-from typing import Generic, Callable
+from typing import Generic, Callable, TypeVar
 
 from checksumdir import dirhash
 
@@ -44,7 +44,7 @@ class ChecksumCalculator(Generic[BuildConfigurationType], metaclass=ABCMeta):
         return hasher.generate()
 
 
-class DockerBuildChecksumCalculator(
+class DockerChecksumCalculator(
         ChecksumCalculator[DockerBuildConfiguration], BuildConfigurationManager[DockerBuildConfiguration]):
     """
     Docker build checksum calculator.

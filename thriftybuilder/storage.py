@@ -109,10 +109,11 @@ class DiskChecksumStorage(ChecksumStorage):
 
 class ConsulChecksumStorage(ChecksumStorage):
     """
-    TODO
+    Consul storage for configuration -> checksum mappings.
 
     Not safe to use on same key in parallel.
     """
+    CONSUL_HTTP_TOKEN_ENVIRONMENT_VARIABLE = "CONSUL_HTTP_TOKEN"
     TEXT_ENCODING = "utf-8"
 
     def __init__(self, data_key: str, consul_client=None, *args, **kwargs):
@@ -124,6 +125,12 @@ class ConsulChecksumStorage(ChecksumStorage):
 
         self.data_key = data_key
         self._consul_client = consul_client if consul_client is not None else Consul()
+
+        if ConsulChecksumStorage.CONSUL_HTTP_TOKEN_ENVIRONMENT_VARIABLE in os.environ:
+            # Work around for https://github.com/cablehead/python-consul/issues/170
+            token = ConsulChecksumStorage.CONSUL_HTTP_TOKEN_ENVIRONMENT_VARIABLE
+            self._consul_client.http.session.headers.update({"X-Consul-Token": token})
+
         super().__init__(*args, **kwargs)
 
     def get_checksum(self, configuration_id: str) -> Optional[str]:
