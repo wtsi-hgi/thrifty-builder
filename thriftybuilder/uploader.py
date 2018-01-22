@@ -67,28 +67,27 @@ class DockerUploader(BuildArtifactUploader[DockerBuildConfiguration]):
     DEFAULT_IMAGE_REPOSITORY = "docker.io"
     _TEXT_ENCODING = "utf-8"
 
-    def __init__(self, checksum_storage: ChecksumStorage, image_repositories: Iterable[str]=(DEFAULT_IMAGE_REPOSITORY,),
+    def __init__(self, checksum_storage: ChecksumStorage, image_repository: str=DEFAULT_IMAGE_REPOSITORY,
                  checksum_calculator: ChecksumCalculator[DockerBuildConfiguration]=None):
         checksum_calculator = checksum_calculator if checksum_calculator is not None else DockerChecksumCalculator()
         super().__init__(checksum_storage, checksum_calculator)
-        self.image_repositories = image_repositories
+        self.image_repository = image_repository
         self._docker_client = docker.from_env()
 
     def _upload(self, build_configuration: DockerBuildConfiguration):
-        for image_repository in self.image_repositories:
-            repository = f"{image_repository}/{build_configuration.name}"
-            logger.info(f"Uploading {build_configuration.name} (tag={build_configuration.tag}) to {image_repository}")
-            self._docker_client.api.tag(build_configuration.name, repository, build_configuration.tag)
+        repository = f"{self.image_repository}/{build_configuration.name}"
+        logger.info(f"Uploading {build_configuration.name} (tag={build_configuration.tag}) to {self.image_repository}")
+        self._docker_client.api.tag(build_configuration.name, repository, build_configuration.tag)
 
-            upload_stream = self._docker_client.images.push(repository, build_configuration.tag, stream=True)
-            for line in upload_stream:
-                line = line.decode(DockerUploader._TEXT_ENCODING)
-                for sub_line in line.split("\r\n"):
-                    if len(sub_line) > 0:
-                        parsed_sub_line = json.loads(sub_line.strip())
-                        logger.debug(parsed_sub_line)
-                        if "error" in parsed_sub_line:
-                            if "image does not exist" in parsed_sub_line["error"]:
-                                raise ImageNotFoundError(build_configuration.name, build_configuration.tag)
-                            else:
-                                raise UploadError(parsed_sub_line["error"])
+        upload_stream = self._docker_client.images.push(repository, build_configuration.tag, stream=True)
+        for line in upload_stream:
+            line = line.decode(DockerUploader._TEXT_ENCODING)
+            for sub_line in line.split("\r\n"):
+                if len(sub_line) > 0:
+                    parsed_sub_line = json.loads(sub_line.strip())
+                    logger.debug(parsed_sub_line)
+                    if "error" in parsed_sub_line:
+                        if "image does not exist" in parsed_sub_line["error"]:
+                            raise ImageNotFoundError(build_configuration.name, build_configuration.tag)
+                        else:
+                            raise UploadError(parsed_sub_line["error"])

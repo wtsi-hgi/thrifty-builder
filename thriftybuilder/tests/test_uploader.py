@@ -10,16 +10,8 @@ from thriftybuilder.builders import DockerBuilder
 from thriftybuilder.checksums import ChecksumCalculator, DockerChecksumCalculator
 from thriftybuilder.models import BuildConfigurationType, DockerBuildConfiguration
 from thriftybuilder.storage import MemoryChecksumStorage
-from thriftybuilder.tests._common import TestWithDockerBuildConfiguration
+from thriftybuilder.tests._common import TestWithDockerBuildConfiguration, TestWithDockerRegistry
 from thriftybuilder.uploader import DockerUploader, BuildArtifactUploader
-
-_RegistryServiceController = DockerisedServiceControllerTypeBuilder(
-    repository="registry",
-    tag="2",
-    name="_RegistryServiceController",
-    start_detector=lambda log_line: "listening on" in log_line,
-    ports=[5000]).build()
-
 
 class _TestBuildArtifactUploader(Generic[BuildConfigurationType], unittest.TestCase,
                                  metaclass=ABCMeta):
@@ -70,7 +62,8 @@ class _TestBuildArtifactUploader(Generic[BuildConfigurationType], unittest.TestC
         self.assertTrue(self.is_uploaded(self.configuration))
 
 
-class TestDockerUploader(_TestBuildArtifactUploader[DockerBuildConfiguration], TestWithDockerBuildConfiguration):
+class TestDockerUploader(_TestBuildArtifactUploader[DockerBuildConfiguration], TestWithDockerBuildConfiguration,
+                         TestWithDockerRegistry):
     """
     Tests for `DockerUploader`.
     """
@@ -78,19 +71,8 @@ class TestDockerUploader(_TestBuildArtifactUploader[DockerBuildConfiguration], T
     def checksum_calculator(self) -> DockerChecksumCalculator:
         return DockerChecksumCalculator()
 
-    def setUp(self):
-        self._registry_controller = _RegistryServiceController()
-        self._registry_service = self._registry_controller.start_service()
-        self.registry_location = f"{self._registry_service.host}:{self._registry_service.port}"
-        super().setUp()
-
-    def tearDown(self):
-        super().tearDown()
-        self._registry_controller.stop_service(self._registry_service)
-
     def create_uploader(self) -> DockerUploader:
-        return DockerUploader(
-            self.checksum_storage, (self.registry_location,), checksum_calculator=self.checksum_calculator)
+        return DockerUploader(self.checksum_storage, self.registry_location, self.checksum_calculator)
 
     def create_built_configuration(self) -> DockerBuildConfiguration:
         _, configuration = self.create_docker_setup()
@@ -100,12 +82,7 @@ class TestDockerUploader(_TestBuildArtifactUploader[DockerBuildConfiguration], T
         return configuration
 
     def is_uploaded(self, configuration: DockerBuildConfiguration) -> bool:
-        docker_client = docker.from_env()
-        try:
-            docker_client.images.pull(f"{self.registry_location}/{configuration.name}", tag=configuration.tag)
-            return True
-        except NotFound:
-            return False
+        return TestWithDockerRegistry.is_uploaded(self, configuration)
 
 
 del _TestBuildArtifactUploader

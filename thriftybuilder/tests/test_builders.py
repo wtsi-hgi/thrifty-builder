@@ -16,15 +16,6 @@ class TestDockerBuilder(TestWithDockerBuildConfiguration):
     def setUp(self):
         super().setUp()
         self.docker_builder = DockerBuilder()
-        self.docker_client = docker.from_env()
-
-    def tearDown(self):
-        super().tearDown()
-        for build_configuration in self.build_configurations:
-            try:
-                self.docker_client.images.remove(build_configuration.identifier)
-            except ImageNotFound:
-                pass
 
     def test_build_when_from_image_is_not_managed(self):
         _, configuration = self.create_docker_setup()
