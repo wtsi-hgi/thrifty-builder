@@ -4,7 +4,7 @@ import sys
 from argparse import ArgumentParser
 from enum import Enum, unique, auto
 from json import JSONDecodeError
-from typing import List, NamedTuple, Dict, Optional, Iterable
+from typing import List, NamedTuple, Dict, Optional
 
 from thriftybuilder.builders import DockerBuilder
 from thriftybuilder.cli.configuration import read_file_configuration

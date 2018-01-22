@@ -1,6 +1,6 @@
 import json
 from abc import abstractmethod, ABCMeta
-from typing import Generic, Iterable
+from typing import Generic
 
 import docker
 

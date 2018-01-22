@@ -2,16 +2,13 @@ import unittest
 from abc import ABCMeta, abstractmethod
 from typing import Generic
 
-import docker
-from docker.errors import NotFound
-from useintest.services._builders import DockerisedServiceControllerTypeBuilder
-
 from thriftybuilder.builders import DockerBuilder
 from thriftybuilder.checksums import ChecksumCalculator, DockerChecksumCalculator
 from thriftybuilder.models import BuildConfigurationType, DockerBuildConfiguration
 from thriftybuilder.storage import MemoryChecksumStorage
 from thriftybuilder.tests._common import TestWithDockerBuildConfiguration, TestWithDockerRegistry
 from thriftybuilder.uploader import DockerUploader, BuildArtifactUploader
+
 
 class _TestBuildArtifactUploader(Generic[BuildConfigurationType], unittest.TestCase,
                                  metaclass=ABCMeta):

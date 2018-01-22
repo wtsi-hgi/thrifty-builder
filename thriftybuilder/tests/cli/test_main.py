@@ -2,7 +2,6 @@ import json
 import os
 import unittest
 from tempfile import NamedTemporaryFile
-from time import sleep
 from typing import List
 
 import yaml

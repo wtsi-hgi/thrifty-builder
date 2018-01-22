@@ -1,6 +1,6 @@
 import os
 from abc import ABCMeta, abstractmethod
-from typing import Generic, Callable, TypeVar
+from typing import Generic, Callable
 
 from checksumdir import dirhash
 

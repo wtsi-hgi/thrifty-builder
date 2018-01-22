@@ -29,7 +29,7 @@ class CircularDependencyBuildError(BuildError):
 
 class UnmanagedBuildError(BuildError):
     """
-    Error raised when illegally trying to use an unmanaged build.
+    Error raised when illegally trying to use an un-managed build.
     """
 
 

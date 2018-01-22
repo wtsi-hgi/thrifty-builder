@@ -3,8 +3,6 @@ import unittest
 from abc import ABCMeta, abstractmethod
 from tempfile import NamedTemporaryFile
 
-from useintest.predefined.consul import ConsulServiceController
-
 from thriftybuilder.storage import ChecksumStorage, MemoryChecksumStorage, DiskChecksumStorage, ConsulChecksumStorage
 from thriftybuilder.tests._common import TestWithConsulService
 
