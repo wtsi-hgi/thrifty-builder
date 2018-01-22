@@ -1,6 +1,6 @@
 from typing import Generic, Iterable, Dict, Iterator, Optional
 
-from thriftybuilder.models import BuildConfigurationType
+from thriftybuilder.build_configurations import BuildConfigurationType
 
 
 class BuildConfigurationContainer(Generic[BuildConfigurationType]):

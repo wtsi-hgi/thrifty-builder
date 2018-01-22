@@ -13,7 +13,7 @@ from useintest.predefined.consul import ConsulServiceController, ConsulDockerise
 from useintest.services._builders import DockerisedServiceControllerTypeBuilder
 from useintest.services.models import DockerisedService
 
-from thriftybuilder.models import DockerBuildConfiguration
+from thriftybuilder.build_configurations import DockerBuildConfiguration
 
 DOCKERFILE_PATH = "Dockerfile"
 FROM_DOCKER_COMMAND = "FROM"

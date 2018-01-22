@@ -6,7 +6,7 @@ from checksumdir import dirhash
 
 from thriftybuilder.common import DEFAULT_ENCODING, BuildConfigurationManager
 from thriftybuilder.hashers import Hasher, Md5Hasher
-from thriftybuilder.models import DockerBuildConfiguration, BuildConfigurationType
+from thriftybuilder.build_configurations import DockerBuildConfiguration, BuildConfigurationType
 
 
 class ChecksumCalculator(Generic[BuildConfigurationType], metaclass=ABCMeta):
@@ -70,7 +70,7 @@ class DockerChecksumCalculator(
             hasher.update(command.original.encode(DEFAULT_ENCODING))
         return hasher.generate()
 
-    # TODO: Should probably go upwards
+    # TODO: Should probably go into superclass
     def calculate_dependency_checksum(self, build_configuration: DockerBuildConfiguration) -> str:
         """
         Calculates the checksum associated to the dependencies of the given build configuration.

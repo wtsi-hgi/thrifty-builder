@@ -7,12 +7,12 @@ from typing import List
 import yaml
 from capturewrap import CaptureWrapBuilder
 
+from thriftybuilder.build_configurations import DockerBuildConfiguration
 from thriftybuilder.builders import DockerBuilder
-from thriftybuilder.cli.configuration import FileConfiguration, FileConfigurationJSONEncoder
-from thriftybuilder.cli.main import main, CHECKSUM_SOURCE_LOCAL_PATH_LONG_PARAMETER, \
+from thriftybuilder.cli import main, CHECKSUM_SOURCE_LOCAL_PATH_LONG_PARAMETER, \
     CHECKSUM_SOURCE_CONSUL_KEY_LONG_PARAMETER, DOCKER_REPOSITORY_LONG_PARAMETER
+from thriftybuilder.configuration import FileConfiguration, FileConfigurationJSONEncoder
 from thriftybuilder.containers import BuildConfigurationContainer
-from thriftybuilder.models import DockerBuildConfiguration
 from thriftybuilder.storage import MemoryChecksumStorage, DiskChecksumStorage
 from thriftybuilder.tests._common import TestWithDockerBuildConfiguration, TestWithConsulService, TestWithDockerRegistry
 

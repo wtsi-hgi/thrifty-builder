@@ -2,12 +2,11 @@ import json
 import logging
 import sys
 from argparse import ArgumentParser
-from enum import Enum, unique, auto
 from json import JSONDecodeError
 from typing import List, NamedTuple, Dict, Optional
 
 from thriftybuilder.builders import DockerBuilder
-from thriftybuilder.cli.configuration import read_file_configuration
+from thriftybuilder.configuration import read_file_configuration
 from thriftybuilder.exceptions import ThriftyBuilderBaseError
 from thriftybuilder.meta import DESCRIPTION, VERSION, PACKAGE_NAME
 from thriftybuilder.storage import MemoryChecksumStorage, DiskChecksumStorage, ConsulChecksumStorage
@@ -19,16 +18,6 @@ DEFAULT_LOG_VERBOSITY = logging.WARN
 CHECKSUM_SOURCE_LOCAL_PATH_LONG_PARAMETER = "checksums-from-path"
 CHECKSUM_SOURCE_CONSUL_KEY_LONG_PARAMETER = "checksums-from-consul-key"
 DOCKER_REPOSITORY_LONG_PARAMETER = "docker-repository"
-
-
-@unique
-class ChecksumSource(Enum):
-    """
-    Checksum storage source.
-    """
-    STDIN = auto()
-    LOCAL = auto()
-    CONSUL = auto()
 
 
 class InvalidCliArgumentError(ThriftyBuilderBaseError):
@@ -49,9 +38,6 @@ class CliConfiguration(NamedTuple):
     """
     configuration_location: str
     log_verbosity: int = DEFAULT_LOG_VERBOSITY
-    checksum_source: ChecksumSource = ChecksumSource.STDIN
-    checksum_local_path: str = None
-    checksum_consul_key: str = None
     docker_repositories: List[str] = ()
 
 
@@ -108,12 +94,14 @@ def parse_cli_configuration(arguments: List[str]) -> CliConfiguration:
             raise InvalidCliArgumentError("Ambiguous checksum source - both local and Consul settings given")
         checksum_source = ChecksumSource.CONSUL
 
+    configuration_location = parsed_arguments[CONFIGURATION_LOCATION_PARAMETER]
+
     return CliConfiguration(log_verbosity=_get_verbosity(parsed_arguments),
                             checksum_source=checksum_source,
-                            configuration_location=parsed_arguments[CONFIGURATION_LOCATION_PARAMETER],
                             checksum_local_path=checksum_local_path,
                             checksum_consul_key=consul_key,
-                            docker_repositories=parsed_arguments[DOCKER_REPOSITORY_LONG_PARAMETER])
+                            docker_repositories=parsed_arguments[DOCKER_REPOSITORY_LONG_PARAMETER],
+                            configuration_location=configuration_location)
 
 
 def main(cli_arguments: List[str], stdin_content: Optional[str]=None):

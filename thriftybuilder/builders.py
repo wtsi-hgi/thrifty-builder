@@ -7,7 +7,7 @@ from docker import APIClient
 from thriftybuilder._logging import create_logger
 from thriftybuilder.checksums import DockerChecksumCalculator, ChecksumCalculator
 from thriftybuilder.common import BuildConfigurationManager
-from thriftybuilder.models import DockerBuildConfiguration, BuildConfigurationType
+from thriftybuilder.build_configurations import DockerBuildConfiguration, BuildConfigurationType
 from thriftybuilder.storage import ChecksumStorage, MemoryChecksumStorage
 
 BuildResultType = TypeVar("BuildResultType")
@@ -146,7 +146,10 @@ class Builder(Generic[BuildConfigurationType, BuildResultType], BuildConfigurati
             return False
 
         current_checksum = self.checksum_calculator.calculate_checksum(build_configuration)
-        return existing_checksum == current_checksum
+        up_to_date = existing_checksum == current_checksum
+        logger.debug(f"Determined that \"{build_configuration.identifier}\" (listed by Docker server) is"
+                     f"{'' if up_to_date else ' not'} up-to-date (checksum={current_checksum})")
+        return up_to_date
 
 
 class DockerBuilder(Builder[DockerBuildConfiguration, str]):
@@ -165,6 +168,8 @@ class DockerBuilder(Builder[DockerBuildConfiguration, str]):
 
     def _build(self, build_configuration: DockerBuildConfiguration) -> str:
         logger.info(f"Building Docker image: {build_configuration.identifier}")
+        logger.debug(f"{build_configuration.identifier} to be build using dockerfile "
+                     f"\"{build_configuration.dockerfile_location}\" in context \"{build_configuration.context}\"")
         # TODO: Control `nocache`
         # TODO: Consider setting `cache_from`: https://docker-py.readthedocs.io/en/stable/images.html
         log_generator = self._docker_client.build(path=build_configuration.context, tag=build_configuration.identifier,

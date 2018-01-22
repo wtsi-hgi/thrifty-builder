@@ -4,7 +4,7 @@ from typing import Generic
 
 from thriftybuilder.builders import DockerBuilder
 from thriftybuilder.checksums import ChecksumCalculator, DockerChecksumCalculator
-from thriftybuilder.models import BuildConfigurationType, DockerBuildConfiguration
+from thriftybuilder.build_configurations import BuildConfigurationType, DockerBuildConfiguration
 from thriftybuilder.storage import MemoryChecksumStorage
 from thriftybuilder.tests._common import TestWithDockerBuildConfiguration, TestWithDockerRegistry
 from thriftybuilder.uploader import DockerUploader, BuildArtifactUploader

@@ -1,13 +1,26 @@
+from enum import Enum, auto
+
 import yaml
 from hgijson import JsonPropertyMapping, MappingJSONEncoderClassBuilder, MappingJSONDecoderClassBuilder
+from wheel.metadata import unique
 
 from thriftybuilder.containers import BuildConfigurationContainer
-from thriftybuilder.models import DockerBuildConfiguration
+from thriftybuilder.build_configurations import DockerBuildConfiguration
 
 DOCKER_IMAGES_PROPERTY = "docker_images"
 DOCKER_IMAGE_NAME_PROPERTY = "name"
 DOCKER_IMAGE_DOCKERFILE_PROPERTY = "dockerfile"
 DOCKER_IMAGE_CONTEXT_PROPERTY = "context"
+
+
+@unique
+class ChecksumSource(Enum):
+    """
+    Checksum storage source.
+    """
+    STDIN = auto()
+    LOCAL = auto()
+    CONSUL = auto()
 
 
 class FileConfiguration:

@@ -2,7 +2,7 @@ import unittest
 from typing import Iterable
 
 from thriftybuilder.checksums import DockerChecksumCalculator
-from thriftybuilder.models import DockerBuildConfiguration
+from thriftybuilder.build_configurations import DockerBuildConfiguration
 from thriftybuilder.containers import BuildConfigurationContainer
 from thriftybuilder.tests._common import COPY_DOCKER_COMMAND, ADD_DOCKER_COMMAND, RUN_DOCKER_COMMAND
 from thriftybuilder.tests._common import TestWithDockerBuildConfiguration

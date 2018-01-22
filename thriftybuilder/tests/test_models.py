@@ -2,7 +2,7 @@ import os
 import unittest
 
 from thriftybuilder.meta import PACKAGE_NAME
-from thriftybuilder.models import DockerBuildConfiguration, _ADD_DOCKER_COMMAND, \
+from thriftybuilder.build_configurations import DockerBuildConfiguration, _ADD_DOCKER_COMMAND, \
     _COPY_DOCKER_COMMAND, DOCKER_IGNORE_FILE
 from thriftybuilder.containers import BuildConfigurationContainer
 from thriftybuilder.tests._common import TestWithDockerBuildConfiguration, DOCKERFILE_PATH

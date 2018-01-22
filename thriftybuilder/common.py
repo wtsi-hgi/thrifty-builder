@@ -1,7 +1,7 @@
 from abc import ABCMeta
 from typing import Generic, Iterable
 
-from thriftybuilder.models import BuildConfigurationType
+from thriftybuilder.build_configurations import BuildConfigurationType
 from thriftybuilder.containers import BuildConfigurationContainer
 
 DEFAULT_ENCODING = "utf-8"
