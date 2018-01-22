@@ -1,4 +1,4 @@
-language: python
+pytlanguage: python
 
 python:
   - 3.6
@@ -17,6 +17,7 @@ install:
 script:
   - PYTHONPATH=. coverage run -m unittest discover -v -s thriftybuilder/tests
   - coverage run setup.py -q install
+  - PYTHONPATH=. coverage run thriftybuilder/cli/main.py -h
   - coverage combine -a
   - coverage report
 
