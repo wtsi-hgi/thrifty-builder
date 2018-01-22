@@ -89,7 +89,7 @@ class DockerBuildConfiguration(BuildConfiguration):
 
         source_files: Set[str] = set()
         for source_path in source_patterns:
-            full_source_path = os.path.normpath(os.path.join(os.path.dirname(self.dockerfile_location), source_path))
+            full_source_path = os.path.normpath(os.path.join(self.context, source_path))
             if os.path.isdir(full_source_path):
                 candidate_files = glob(f"{full_source_path}/**/*", recursive=True)
             else:
@@ -129,8 +129,9 @@ class DockerBuildConfiguration(BuildConfiguration):
             raise ValueError(f"`image_name` must be a string - {type(image_name)} given")
 
         self._identifier = image_name
-        self._dockerfile_location = dockerfile_location
-        self._context = context if context is not None else os.path.dirname(self.dockerfile_location)
+        self._dockerfile_location = os.path.expanduser(dockerfile_location)
+        self._context = os.path.expanduser(context) if context is not None \
+            else os.path.dirname(self.dockerfile_location)
         self.commands = dockerfile.parse_file(self.dockerfile_location)
 
     def get_ignored_files(self) -> Set[str]:
