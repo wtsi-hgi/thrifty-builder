@@ -1,2 +1,2 @@
 capturewrap>=1.1.0
-useintest
+useintest>=4.1.0

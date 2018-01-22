@@ -17,4 +17,3 @@ class MissingOptionalDependencyError(ThriftyBuilderBaseError):
     """
     Exception raised if option dependency is required but not installed.
     """
-

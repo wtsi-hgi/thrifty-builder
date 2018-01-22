@@ -2,23 +2,25 @@ import json
 import os
 import unittest
 from tempfile import NamedTemporaryFile
+from time import sleep
 from typing import List
 
 import yaml
 from capturewrap import CaptureWrapBuilder
 
 from thriftybuilder.builders import DockerBuilder
-from thriftybuilder.checksums import DockerBuildChecksumCalculator
 from thriftybuilder.cli.configuration import FileConfiguration, FileConfigurationJSONEncoder
-from thriftybuilder.cli.main import main, CHECKSUM_SOURCE_LOCAL_PATH_LONG_PARAMETER
-from thriftybuilder.models import BuildConfigurationContainer, DockerBuildConfiguration
-from thriftybuilder.storage import MemoryChecksumStorage
-from thriftybuilder.tests._common import TestWithDockerBuildConfiguration
+from thriftybuilder.cli.main import main, CHECKSUM_SOURCE_LOCAL_PATH_LONG_PARAMETER, \
+    CHECKSUM_SOURCE_CONSUL_KEY_LONG_PARAMETER, DOCKER_REPOSITORY_LONG_PARAMETER
+from thriftybuilder.containers import BuildConfigurationContainer
+from thriftybuilder.models import DockerBuildConfiguration
+from thriftybuilder.storage import MemoryChecksumStorage, DiskChecksumStorage
+from thriftybuilder.tests._common import TestWithDockerBuildConfiguration, TestWithConsulService, TestWithDockerRegistry
 
 
-class TestMain(TestWithDockerBuildConfiguration):
+class TestMain(TestWithDockerBuildConfiguration, TestWithConsulService, TestWithDockerRegistry):
     """
-    TODO
+    Tests for CLI.
     """
     def setUp(self):
         super().setUp()
@@ -64,15 +66,42 @@ class TestMain(TestWithDockerBuildConfiguration):
             result = self._captured_main([
                 f"--{CHECKSUM_SOURCE_LOCAL_PATH_LONG_PARAMETER}", temp_file.name, self.file_configuration_location])
 
-            expected = {configuration.identifier for configuration in self.configurations
-                        if configuration != self.pre_built_configuration}
-            self.assertEqual(json.loads(result.stdout).keys(), expected)
+        expected = {configuration.identifier for configuration in self.configurations
+                    if configuration != self.pre_built_configuration}
+        self.assertEqual(json.loads(result.stdout).keys(), expected)
+
+    def test_build_when_consul_checksums(self):
+        test_key = "example-key"
+        checksums_as_json = json.dumps(self.checksum_storage.get_all_checksums())
+        self.consul_client.kv.put(test_key, checksums_as_json)
+        self.consul_service.setup_environment()
+
+        result = self._captured_main([
+            f"--{CHECKSUM_SOURCE_CONSUL_KEY_LONG_PARAMETER}", test_key, self.file_configuration_location])
+
+        expected = {configuration.identifier for configuration in self.configurations
+                    if configuration != self.pre_built_configuration}
+        self.assertEqual(json.loads(result.stdout).keys(), expected)
+
+    def test_built_then_upload(self):
+        with NamedTemporaryFile(mode="w") as temp_file:
+            json.dump({}, temp_file.file)
+            temp_file.file.flush()
+            result = self._captured_main([
+                f"--{CHECKSUM_SOURCE_LOCAL_PATH_LONG_PARAMETER}", temp_file.name,
+                f"--{DOCKER_REPOSITORY_LONG_PARAMETER}", self.registry_location, self.file_configuration_location])
+
+            parsed_result = json.loads(result.stdout)
+            assert len(parsed_result) == len(self.configurations)
+            self.assertEqual(parsed_result, DiskChecksumStorage(temp_file.name).get_all_checksums())
+            for configuration in self.configurations:
+                self.assertTrue(self.is_uploaded(configuration))
 
     def _file_configuration_to_file(self, file_configuration: FileConfiguration) -> str:
         """
-        TODO
-        :param file_configuration:
-        :return:
+        Writes the given file configuration to a temp file.
+        :param file_configuration: the file configuration to write to file
+        :return: location of the written file
         """
         temp_file = NamedTemporaryFile(delete=False)
         self._file_configuration_locations.append(temp_file.name)

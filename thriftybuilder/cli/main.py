@@ -2,29 +2,33 @@ import json
 import logging
 import sys
 from argparse import ArgumentParser
-from enum import Enum, unique
+from enum import Enum, unique, auto
 from json import JSONDecodeError
-from typing import List, NamedTuple, Dict, Optional
+from typing import List, NamedTuple, Dict, Optional, Iterable
 
 from thriftybuilder.builders import DockerBuilder
 from thriftybuilder.cli.configuration import read_file_configuration
 from thriftybuilder.exceptions import ThriftyBuilderBaseError
 from thriftybuilder.meta import DESCRIPTION, VERSION, PACKAGE_NAME
-from thriftybuilder.storage import MemoryChecksumStorage
+from thriftybuilder.storage import MemoryChecksumStorage, DiskChecksumStorage, ConsulChecksumStorage
+from thriftybuilder.uploader import DockerUploader
 
 VERBOSE_CLI_SHORT_PARAMETER = "v"
 CONFIGURATION_LOCATION_PARAMETER = "configuration-location"
 DEFAULT_LOG_VERBOSITY = logging.WARN
 CHECKSUM_SOURCE_LOCAL_PATH_LONG_PARAMETER = "checksums-from-path"
+CHECKSUM_SOURCE_CONSUL_KEY_LONG_PARAMETER = "checksums-from-consul-key"
+DOCKER_REPOSITORY_LONG_PARAMETER = "docker-repository"
 
 
 @unique
 class ChecksumSource(Enum):
     """
-    TODO
+    Checksum storage source.
     """
-    STDIN = "stdin"
-    LOCAL = "local"
+    STDIN = auto()
+    LOCAL = auto()
+    CONSUL = auto()
 
 
 class InvalidCliArgumentError(ThriftyBuilderBaseError):
@@ -47,6 +51,8 @@ class CliConfiguration(NamedTuple):
     log_verbosity: int = DEFAULT_LOG_VERBOSITY
     checksum_source: ChecksumSource = ChecksumSource.STDIN
     checksum_local_path: str = None
+    checksum_consul_key: str = None
+    docker_repositories: List[str] = ()
 
 
 def _create_parser() -> ArgumentParser:
@@ -54,10 +60,15 @@ def _create_parser() -> ArgumentParser:
     Creates argument parser for the CLI.
     :return: the argument parser
     """
+    # TODO: Complete helps
     parser = ArgumentParser(description=f"{DESCRIPTION} (v{VERSION})")
     parser.add_argument(f"-{VERBOSE_CLI_SHORT_PARAMETER}", action="count", default=0,
                         help="increase the level of log verbosity (add multiple increase further)")
     parser.add_argument(f"--{CHECKSUM_SOURCE_LOCAL_PATH_LONG_PARAMETER}", type=str,
+                        help="TODO")
+    parser.add_argument(f"--{CHECKSUM_SOURCE_CONSUL_KEY_LONG_PARAMETER}", type=str,
+                        help="TODO")
+    parser.add_argument(f"--{DOCKER_REPOSITORY_LONG_PARAMETER}", action="append", default=[],
                         help="TODO")
     parser.add_argument(CONFIGURATION_LOCATION_PARAMETER, type=str,
                         help="location of configuration")
@@ -91,10 +102,18 @@ def parse_cli_configuration(arguments: List[str]) -> CliConfiguration:
     if checksum_local_path is not None:
         checksum_source = ChecksumSource.LOCAL
 
+    consul_key = parsed_arguments.get(CHECKSUM_SOURCE_CONSUL_KEY_LONG_PARAMETER)
+    if consul_key is not None:
+        if checksum_source == ChecksumSource.LOCAL:
+            raise InvalidCliArgumentError("Ambiguous checksum source - both local and Consul settings given")
+        checksum_source = ChecksumSource.CONSUL
+
     return CliConfiguration(log_verbosity=_get_verbosity(parsed_arguments),
                             checksum_source=checksum_source,
                             configuration_location=parsed_arguments[CONFIGURATION_LOCATION_PARAMETER],
-                            checksum_local_path=checksum_local_path)
+                            checksum_local_path=checksum_local_path,
+                            checksum_consul_key=consul_key,
+                            docker_repositories=parsed_arguments[DOCKER_REPOSITORY_LONG_PARAMETER])
 
 
 def main(cli_arguments: List[str], stdin_content: Optional[str]=None):
@@ -110,24 +129,29 @@ def main(cli_arguments: List[str], stdin_content: Optional[str]=None):
     if cli_configuration.log_verbosity:
         logging.getLogger(PACKAGE_NAME).setLevel(cli_configuration.log_verbosity)
 
-    checksums_as_json_string = None
+    checksum_storage = None
     if cli_configuration.checksum_source == ChecksumSource.STDIN and stdin_content is not None:
         checksums_as_json_string = stdin_content
-    elif cli_configuration.checksum_source == ChecksumSource.LOCAL:
-        with open(cli_configuration.checksum_local_path, "r") as file:
-            checksums_as_json_string = file.read()
-
-    checksum_storage = MemoryChecksumStorage()
-    if checksums_as_json_string is not None:
         try:
             checksums_as_json = json.loads(checksums_as_json_string)
         except JSONDecodeError as e:
             raise UnreadableChecksumStorageError(checksums_as_json_string) from e
-        checksum_storage.set_all_checksums(checksums_as_json)
+        checksum_storage = MemoryChecksumStorage(checksums_as_json)
+    elif cli_configuration.checksum_source == ChecksumSource.LOCAL:
+        checksum_storage = DiskChecksumStorage(cli_configuration.checksum_local_path)
+    elif cli_configuration.checksum_source == ChecksumSource.CONSUL:
+        checksum_storage = ConsulChecksumStorage(cli_configuration.checksum_consul_key)
 
     docker_builder = DockerBuilder(
         managed_build_configurations=configuration.docker_build_configurations, checksum_storage=checksum_storage)
     build_results = docker_builder.build_all()
+
+    if len(cli_configuration.docker_repositories) > 0:
+        for repository in cli_configuration.docker_repositories:
+            uploader = DockerUploader(checksum_storage, repository)
+            for configuration in build_results.keys():
+                uploader.upload(configuration)
+
     print(json.dumps({configuration.identifier: docker_builder.checksum_calculator.calculate_checksum(configuration)
                       for configuration in build_results.keys()}))
 

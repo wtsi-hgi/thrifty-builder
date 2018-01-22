@@ -7,7 +7,11 @@ from tempfile import mkdtemp
 from typing import List, Dict, Optional, Tuple, Iterable
 
 import docker
-from docker.errors import ImageNotFound, NullResource
+from consul import Consul
+from docker.errors import ImageNotFound, NullResource, NotFound
+from useintest.predefined.consul import ConsulServiceController, ConsulDockerisedService
+from useintest.services._builders import DockerisedServiceControllerTypeBuilder
+from useintest.services.models import DockerisedService
 
 from thriftybuilder.models import DockerBuildConfiguration
 
@@ -70,23 +74,34 @@ class TestWithDockerBuildConfiguration(unittest.TestCase, metaclass=ABCMeta):
     Superclass for a test case that uses Docker build configurations.
     """
     def setUp(self):
-        self.setup_locations: List[str] = []
-        self.build_configurations: List[DockerBuildConfiguration] = []
+        super().setUp()
+        self.docker_client = docker.from_env()
+        self._setup_locations: List[str] = []
+        self.images_to_delete: List[str] = []
 
     def tearDown(self):
-        for location in self.setup_locations:
+        super().tearDown()
+        for location in self._setup_locations:
             shutil.rmtree(location)
         docker_client = docker.from_env()
-        for configuration in self.build_configurations:
+
+        # Nasty OO to avoid multiple-inheritance method invocation ordering problems
+        if isinstance(self, TestWithDockerRegistry):
+            additional: List[str] = []
+            for identifier in self.images_to_delete:
+                additional.append(f"{self.registry_location}/{identifier}")
+            self.images_to_delete.extend(additional)
+
+        for identifier in self.images_to_delete:
             try:
-                docker_client.images.remove(configuration.identifier)
+                docker_client.images.remove(identifier)
             except (ImageNotFound, NullResource):
                 pass
 
     def create_docker_setup(self, *args, **kwargs) -> Tuple[str, DockerBuildConfiguration]:
         setup_location, build_configuration = create_docker_setup(*args, **kwargs)
-        self.setup_locations.append(setup_location)
-        self.build_configurations.append(build_configuration)
+        self._setup_locations.append(setup_location)
+        self.images_to_delete.append(build_configuration.identifier)
         return setup_location, build_configuration
 
     def create_dependent_docker_build_configurations(self, number: int) -> List[DockerBuildConfiguration]:
@@ -98,3 +113,70 @@ class TestWithDockerBuildConfiguration(unittest.TestCase, metaclass=ABCMeta):
             configurations.append(configuration)
 
         return configurations
+
+
+class TestWithConsulService(unittest.TestCase, metaclass=ABCMeta):
+    """
+    Base class for tests that use a Consul service.
+    """
+    @property
+    def consul_service(self) -> ConsulDockerisedService:
+        if self._consul_service is None:
+            self._consul_service = self._consul_controller.start_service()
+        return self._consul_service
+
+    @property
+    def consul_client(self) -> Consul:
+        if self._consul_client is None:
+            self._consul_client = self.consul_service.create_consul_client()
+        return self._consul_client
+
+    def setUp(self):
+        self._consul_controller = ConsulServiceController()
+        self._consul_service = None
+        self._consul_client = None
+        super().setUp()
+
+    def tearDown(self):
+        if self._consul_service is not None:
+            self._consul_controller.stop_service(self._consul_service)
+
+
+class TestWithDockerRegistry(unittest.TestCase, metaclass=ABCMeta):
+    """
+    Base class for tests that use a (local) Docker registry.
+    """
+    _RegistryServiceController = DockerisedServiceControllerTypeBuilder(
+        repository="registry",
+        tag="2",
+        name="_RegistryServiceController",
+        start_detector=lambda log_line: "listening on" in log_line,
+        ports=[5000]).build()
+
+    @property
+    def registry_location(self) -> str:
+        return  f"{self._registry_service.host}:{self._registry_service.port}"
+
+    @property
+    def _registry_service(self) -> DockerisedService:
+        if self._docker_registry_service is None:
+            self._docker_registry_service = self._registry_controller.start_service()
+        return self._docker_registry_service
+
+    def setUp(self):
+        self._registry_controller = TestWithDockerRegistry._RegistryServiceController()
+        self._docker_registry_service = None
+        super().setUp()
+
+    def tearDown(self):
+        super().tearDown()
+        if self._docker_registry_service is not None:
+            self._registry_controller.stop_service(self._docker_registry_service)
+
+    def is_uploaded(self, configuration: DockerBuildConfiguration) -> bool:
+        docker_client = docker.from_env()
+        try:
+            docker_client.images.pull(f"{self.registry_location}/{configuration.name}", tag=configuration.tag)
+            return True
+        except NotFound:
+            return False
