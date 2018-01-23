@@ -95,15 +95,16 @@ class TestMain(TestWithDockerBuildConfiguration, TestWithConsulService, TestWith
         stdout, stderr = self._run(self.run_configuration, output_built_only=False, stdin=checksums_as_json)
         self.assertEqual(len(json.loads(stdout)), len(self.build_configurations))
 
-    def _run(self, file_configuration: Configuration, output_built_only: bool=True, stdin: str=None) -> Tuple[str, str]:
+    def _run(self, configuration: Configuration, output_built_only: bool=True, stdin: str=None) -> Tuple[str, str]:
         """
-        TODO
-        :param file_configuration:
-        :param output_built_only:
-        :param stdin:
-        :return:
+        Runs the given configuration through the CLI.
+        :param configuration: run configuration
+        :param output_built_only: whether to output built (now) results only
+        :param stdin: content to pass as stdin
+        :return: tuple where the first element is what was written to stdout and the second is that which has gone to
+        stderr
         """
-        file_configuration_location = self._file_configuration_to_file(file_configuration)
+        file_configuration_location = self._file_configuration_to_file(configuration)
         arguments = [file_configuration_location]
         if output_built_only:
             arguments.insert(0, f"--{OUTPUT_BUILT_ONLY_LONG_PARAMETER}")
