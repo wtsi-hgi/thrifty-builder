@@ -13,8 +13,11 @@ from thriftybuilder.storage import MemoryChecksumStorage
 from thriftybuilder.uploader import DockerUploader
 
 VERBOSE_CLI_SHORT_PARAMETER = "v"
+OUTPUT_BUILT_ONLY_LONG_PARAMETER = "built-only"
 CONFIGURATION_LOCATION_PARAMETER = "configuration-location"
+
 DEFAULT_LOG_VERBOSITY = logging.WARN
+DEFAULT_BUILT_ONLY = False
 
 logger = create_logger(__name__)
 
@@ -36,6 +39,7 @@ class CliConfiguration(NamedTuple):
     CLI configuration.
     """
     configuration_location: str
+    output_built_only: bool = DEFAULT_BUILT_ONLY
     log_verbosity: int = DEFAULT_LOG_VERBOSITY
 
 
@@ -48,6 +52,8 @@ def _create_parser() -> ArgumentParser:
     parser = ArgumentParser(description=f"{DESCRIPTION} (v{VERSION})")
     parser.add_argument(f"-{VERBOSE_CLI_SHORT_PARAMETER}", action="count", default=0,
                         help="increase the level of log verbosity (add multiple increase further)")
+    parser.add_argument(f"--{OUTPUT_BUILT_ONLY_LONG_PARAMETER}", action="store_true", default=DEFAULT_BUILT_ONLY,
+                        help="only print details about newly built images on stdout")
     parser.add_argument(CONFIGURATION_LOCATION_PARAMETER, type=str,
                         help="location of configuration")
     return parser
@@ -75,6 +81,8 @@ def parse_cli_configuration(arguments: List[str]) -> CliConfiguration:
     """
     parsed_arguments = {x.replace("_", "-"): y for x, y in vars(_create_parser().parse_args(arguments)).items()}
     return CliConfiguration(log_verbosity=_get_verbosity(parsed_arguments),
+                            output_built_only=parsed_arguments.get(
+                                OUTPUT_BUILT_ONLY_LONG_PARAMETER, DEFAULT_BUILT_ONLY),
                             configuration_location=parsed_arguments[CONFIGURATION_LOCATION_PARAMETER])
 
 
@@ -102,19 +110,22 @@ def main(cli_arguments: List[str], stdin_content: Optional[str]=None):
     if len(configuration.docker_registries) > 0:
         for repository in configuration.docker_registries:
             uploader = DockerUploader(configuration.checksum_storage, repository)
-            for configuration in build_results.keys():
-                uploader.upload(configuration)
+            for build_configuration in build_results.keys():
+                uploader.upload(build_configuration)
 
-    output: Dict[str, str] = {}
-    built_now: List[str] = []
+    all_built: Dict[str, str] = {}
+    built_now: Dict[str, str] = {}
     for build_configuration in configuration.docker_build_configurations:
         checksum = docker_builder.checksum_calculator.calculate_checksum(build_configuration)
-        output[build_configuration.identifier] = checksum
+        all_built[build_configuration.identifier] = checksum
         if build_configuration in build_results:
-            built_now.append(build_configuration.identifier)
+            built_now[build_configuration.identifier] = checksum
 
-    logger.info(f"Build results: %s" % json.dumps({key: value for key, value in output.items() if key in built_now}))
-    print(output)
+    output = built_now
+    if not cli_configuration.output_built_only:
+        logger.info(f"Build results: %s" % json.dumps(built_now))
+        output = all_built
+    print(json.dumps(output))
 
     exit(0)
 

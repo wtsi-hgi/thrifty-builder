@@ -9,7 +9,7 @@ from capturewrap import CaptureWrapBuilder
 
 from thriftybuilder.build_configurations import DockerBuildConfiguration
 from thriftybuilder.builders import DockerBuilder
-from thriftybuilder.cli import main
+from thriftybuilder.cli import main, OUTPUT_BUILT_ONLY_LONG_PARAMETER
 from thriftybuilder.configuration import Configuration, ConfigurationJSONEncoder, DockerRegistry
 from thriftybuilder.containers import BuildConfigurationContainer
 from thriftybuilder.storage import MemoryChecksumStorage, DiskChecksumStorage, ConsulChecksumStorage
@@ -50,11 +50,11 @@ class TestMain(TestWithDockerBuildConfiguration, TestWithConsulService, TestWith
 
     def test_build_when_stdin_checksums(self):
         checksums_as_json = json.dumps(self.run_configuration.checksum_storage.get_all_checksums())
-        result = self._captured_main([self._file_configuration_to_file(self.run_configuration)], checksums_as_json)
+        stdout, stderr = self._run(self.run_configuration, stdin=checksums_as_json)
 
         expected = {configuration.identifier for configuration in self.build_configurations
                     if configuration != self.pre_built_configuration}
-        self.assertEqual(json.loads(result.stdout).keys(), expected)
+        self.assertEqual(json.loads(stdout).keys(), expected)
 
     def test_build_when_local_path_checksums(self):
         with NamedTemporaryFile(mode="w") as temp_file:
@@ -90,13 +90,24 @@ class TestMain(TestWithDockerBuildConfiguration, TestWithConsulService, TestWith
         for configuration in self.build_configurations:
             self.assertTrue(self.is_uploaded(configuration))
 
-    def _run(self, file_configuration: Configuration) -> Tuple[str, str]:
+    def test_build_then_output_all(self):
+        checksums_as_json = json.dumps(self.run_configuration.checksum_storage.get_all_checksums())
+        stdout, stderr = self._run(self.run_configuration, output_built_only=False, stdin=checksums_as_json)
+        self.assertEqual(len(json.loads(stdout)), len(self.build_configurations))
+
+    def _run(self, file_configuration: Configuration, output_built_only: bool=True, stdin: str=None) -> Tuple[str, str]:
         """
         TODO
+        :param file_configuration:
+        :param output_built_only:
+        :param stdin:
         :return:
         """
         file_configuration_location = self._file_configuration_to_file(file_configuration)
-        result = self._captured_main([file_configuration_location])
+        arguments = [file_configuration_location]
+        if output_built_only:
+            arguments.insert(0, f"--{OUTPUT_BUILT_ONLY_LONG_PARAMETER}")
+        result = self._captured_main(arguments, stdin)
         return result.stdout, result.stderr
 
     def _file_configuration_to_file(self, file_configuration: Configuration) -> str:
