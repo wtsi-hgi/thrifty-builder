@@ -12,7 +12,7 @@ from thriftybuilder.meta import DESCRIPTION, VERSION, PACKAGE_NAME
 from thriftybuilder.storage import MemoryChecksumStorage
 from thriftybuilder.uploader import DockerUploader
 
-VERBOSE_CLI_SHORT_PARAMETER = "v"
+VERBOSE_SHORT_PARAMETER = "v"
 OUTPUT_BUILT_ONLY_LONG_PARAMETER = "built-only"
 CONFIGURATION_LOCATION_PARAMETER = "configuration-location"
 
@@ -50,7 +50,7 @@ def _create_parser() -> ArgumentParser:
     """
     # TODO: Complete helps
     parser = ArgumentParser(description=f"{DESCRIPTION} (v{VERSION})")
-    parser.add_argument(f"-{VERBOSE_CLI_SHORT_PARAMETER}", action="count", default=0,
+    parser.add_argument(f"-{VERBOSE_SHORT_PARAMETER}", action="count", default=0,
                         help="increase the level of log verbosity (add multiple increase further)")
     parser.add_argument(f"--{OUTPUT_BUILT_ONLY_LONG_PARAMETER}", action="store_true", default=DEFAULT_BUILT_ONLY,
                         help="only print details about newly built images on stdout")
@@ -66,7 +66,7 @@ def _get_verbosity(parsed_arguments: Dict) -> int:
     :param parsed_arguments: the parsed arguments
     :return: the verbosity level implied
     """
-    verbosity = DEFAULT_LOG_VERBOSITY - (int(parsed_arguments.get(VERBOSE_CLI_SHORT_PARAMETER)) * 10)
+    verbosity = DEFAULT_LOG_VERBOSITY - (int(parsed_arguments.get(VERBOSE_SHORT_PARAMETER)) * 10)
     if verbosity < 10:
         raise InvalidCliArgumentError("Cannot provide any further logging - reduce log verbosity")
     assert verbosity <= logging.CRITICAL
@@ -99,7 +99,7 @@ def main(cli_arguments: List[str], stdin_content: Optional[str]=None):
     if cli_configuration.log_verbosity:
         logging.getLogger(PACKAGE_NAME).setLevel(cli_configuration.log_verbosity)
 
-    if isinstance(configuration.checksum_storage, MemoryChecksumStorage) and stdin_content is not None:
+    if isinstance(configuration.checksum_storage, MemoryChecksumStorage) and stdin_content:
         logger.info("Reading checksums from stdin")
         configuration.checksum_storage.set_all_checksums(json.loads(stdin_content))
 
