@@ -1,6 +1,7 @@
 from json import JSONEncoder, JSONDecoder
-from typing import Iterable
+from typing import Iterable, Dict
 
+import os
 import yaml
 from hgijson import JsonPropertyMapping, MappingJSONEncoderClassBuilder, MappingJSONDecoderClassBuilder
 
@@ -59,10 +60,39 @@ def read_configuration(location: str) -> Configuration:
     :param location: location of the configuration file
     :return: parsed configuration from file
     """
+    location = _process_path(location)
+
     with open(location, "r") as file:
         raw_configuration = yaml.load(file)
 
+    # Pre-process to convert relative paths to absolute
+    paths_relative_to = os.path.abspath(os.path.dirname(location))
+
+    if CHECKSUM_STORAGE_TYPE_LOCAL_PATH_PROPERTY in raw_configuration.get(CHECKSUM_STORAGE_PROPERTY, {}):
+        path = raw_configuration[CHECKSUM_STORAGE_PROPERTY][CHECKSUM_STORAGE_TYPE_LOCAL_PATH_PROPERTY]
+        raw_configuration[CHECKSUM_STORAGE_PROPERTY][CHECKSUM_STORAGE_TYPE_LOCAL_PATH_PROPERTY] = _process_path(
+            path, paths_relative_to)
+
+    raw_docker_images = raw_configuration.get(DOCKER_PROPERTY, {}).get(DOCKER_IMAGES_PROPERTY, [])
+    for raw_docker_image in raw_docker_images:
+        raw_docker_image[DOCKER_IMAGE_DOCKERFILE_PROPERTY] = _process_path(
+            raw_docker_image[DOCKER_IMAGE_DOCKERFILE_PROPERTY], paths_relative_to)
+        if DOCKER_IMAGE_CONTEXT_PROPERTY in raw_docker_image:
+            raw_docker_image[DOCKER_IMAGE_CONTEXT_PROPERTY] = _process_path(
+                raw_docker_image[DOCKER_IMAGE_CONTEXT_PROPERTY], paths_relative_to)
+
     return ConfigurationJSONDecoder().decode_parsed(raw_configuration)
+
+
+def _process_path(path: str, path_relative_to: str=os.getcwd()) -> str:
+    """
+    Processes the given path.
+    :param path: path to process
+    :param path_relative_to: path to make given path relative to if it is relative
+    :return: absolute path
+    """
+    path = os.path.expanduser(path)
+    return os.path.join(path_relative_to, path) if not os.path.isabs(path) else path
 
 
 _disk_checksum_storage_mappings = [

@@ -118,6 +118,20 @@ class DockerBuildConfiguration(BuildConfiguration):
     def context(self) -> str:
         return self._context
 
+    @dockerfile_location.setter
+    def dockerfile_location(self, location: str):
+        location = os.path.expanduser(location)
+        if not os.path.isabs(location):
+            raise ValueError("dockerfile_location must be an absolute path")
+        self._dockerfile_location = location
+
+    @context.setter
+    def context(self, context: str):
+        context = os.path.expanduser(context)
+        if not os.path.isabs(context):
+            raise ValueError("context must be an absolute path")
+        self._context = context
+
     def __init__(self, image_name: str, dockerfile_location: str, context: str=None):
         """
         Constructor.
@@ -128,10 +142,12 @@ class DockerBuildConfiguration(BuildConfiguration):
         if not isinstance(image_name, str):
             raise ValueError(f"`image_name` must be a string - {type(image_name)} given")
 
+        self._dockerfile_location = None
+        self._context = None
+
         self._identifier = image_name
-        self._dockerfile_location = os.path.expanduser(dockerfile_location)
-        self._context = os.path.expanduser(context) if context is not None \
-            else os.path.dirname(self.dockerfile_location)
+        self.dockerfile_location = dockerfile_location
+        self.context = context if context is not None else os.path.dirname(self.dockerfile_location)
         self.commands = dockerfile.parse_file(self.dockerfile_location)
 
     def get_ignored_files(self) -> Set[str]:

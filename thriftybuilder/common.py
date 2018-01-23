@@ -1,6 +1,8 @@
 from abc import ABCMeta
 from typing import Generic, Iterable
 
+import os
+
 from thriftybuilder.build_configurations import BuildConfigurationType
 from thriftybuilder.containers import BuildConfigurationContainer
 
