@@ -6,6 +6,7 @@ import docker
 
 from thriftybuilder._logging import create_logger
 from thriftybuilder.checksums import ChecksumCalculator, DockerChecksumCalculator
+from thriftybuilder.configuration import DockerRegistry
 from thriftybuilder.exceptions import ThriftyBuilderBaseError
 from thriftybuilder.build_configurations import BuildConfigurationType, DockerBuildConfiguration
 from thriftybuilder.storage import ChecksumStorage
@@ -64,22 +65,28 @@ class DockerUploader(BuildArtifactUploader[DockerBuildConfiguration]):
     """
     Uploader of Docker images resulting from a build to a remote repository.
     """
-    DEFAULT_IMAGE_REPOSITORY = "docker.io"
+    DEFAULT_DOCKER_REGISTRY = DockerRegistry("docker.io")
     _TEXT_ENCODING = "utf-8"
 
-    def __init__(self, checksum_storage: ChecksumStorage, image_repository: str=DEFAULT_IMAGE_REPOSITORY,
+    def __init__(self, checksum_storage: ChecksumStorage, docker_registry: DockerRegistry=DEFAULT_DOCKER_REGISTRY,
                  checksum_calculator: ChecksumCalculator[DockerBuildConfiguration]=None):
         checksum_calculator = checksum_calculator if checksum_calculator is not None else DockerChecksumCalculator()
         super().__init__(checksum_storage, checksum_calculator)
-        self.image_repository = image_repository
+        self.docker_registry = docker_registry
         self._docker_client = docker.from_env()
 
     def _upload(self, build_configuration: DockerBuildConfiguration):
-        repository = f"{self.image_repository}/{build_configuration.name}"
-        logger.info(f"Uploading {build_configuration.name} (tag={build_configuration.tag}) to {self.image_repository}")
+        repository = f"{self.docker_registry.url}/{build_configuration.name}"
+        logger.info(f"Uploading {build_configuration.name} (tag={build_configuration.tag}) to "
+                    f"{self.docker_registry.url}")
         self._docker_client.api.tag(build_configuration.name, repository, build_configuration.tag)
 
-        upload_stream = self._docker_client.images.push(repository, build_configuration.tag, stream=True)
+        auth_config = None
+        if self.docker_registry.username is not None and self.docker_registry.password is not None:
+            auth_config = {"username": self.docker_registry.username, "password": self.docker_registry.password}
+
+        upload_stream = self._docker_client.images.push(repository, build_configuration.tag, stream=True,
+                                                        auth_config=auth_config)
         for line in upload_stream:
             line = line.decode(DockerUploader._TEXT_ENCODING)
             for sub_line in line.split("\r\n"):

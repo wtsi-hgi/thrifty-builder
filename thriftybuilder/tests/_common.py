@@ -155,7 +155,7 @@ class TestWithDockerRegistry(unittest.TestCase, metaclass=ABCMeta):
 
     @property
     def registry_location(self) -> str:
-        return  f"{self._registry_service.host}:{self._registry_service.port}"
+        return f"{self._registry_service.host}:{self._registry_service.port}"
 
     @property
     def _registry_service(self) -> DockerisedService:

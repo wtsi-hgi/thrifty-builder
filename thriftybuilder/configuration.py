@@ -1,34 +1,111 @@
-from enum import Enum, auto
+from json import JSONEncoder, JSONDecoder
+from typing import Iterable
 
 import yaml
 from hgijson import JsonPropertyMapping, MappingJSONEncoderClassBuilder, MappingJSONDecoderClassBuilder
-from wheel.metadata import unique
 
-from thriftybuilder.containers import BuildConfigurationContainer
 from thriftybuilder.build_configurations import DockerBuildConfiguration
+from thriftybuilder.containers import BuildConfigurationContainer
+from thriftybuilder.storage import ChecksumStorage, DiskChecksumStorage, ConsulChecksumStorage, MemoryChecksumStorage
 
-DOCKER_IMAGES_PROPERTY = "docker_images"
+DOCKER_PROPERTY = "docker"
+
+DOCKER_IMAGES_PROPERTY = "images"
 DOCKER_IMAGE_NAME_PROPERTY = "name"
 DOCKER_IMAGE_DOCKERFILE_PROPERTY = "dockerfile"
 DOCKER_IMAGE_CONTEXT_PROPERTY = "context"
 
+DOCKER_REGISTRIES_PROPERTY = "registries"
+DOCKER_REGISTRY_URL = "url"
+DOCKER_REGISTRY_USERNAME = "username"
+DOCKER_REGISTRY_PASSWORD = "password"
 
-@unique
-class ChecksumSource(Enum):
-    """
-    Checksum storage source.
-    """
-    STDIN = auto()
-    LOCAL = auto()
-    CONSUL = auto()
+CHECKSUM_STORAGE_PROPERTY = "checksum_storage"
+CHECKSUM_STORAGE_TYPE_PROPERTY = "type"
+CHECKSUM_STORAGE_TYPE_VALUE_MAP = {
+    DiskChecksumStorage: "local",
+    ConsulChecksumStorage: "consul",
+    MemoryChecksumStorage: "stdio"
+}
+CHECKSUM_STORAGE_TYPE_LOCAL_PATH_PROPERTY = "path"
+CHECKSUM_STORAGE_TYPE_CONSUL_KEY_PROPERTY = "key"
 
 
-class FileConfiguration:
+class DockerRegistry:
     """
-    Image build configuration from file.
+    Docker registry.
     """
-    def __init__(self, docker_build_configurations: BuildConfigurationContainer[DockerBuildConfiguration]):
-        self.docker_build_configurations = docker_build_configurations
+    def __init__(self, url: str, username: str=None, password: str=None):
+        self.url = url
+        self.username = username
+        self.password = password
+
+
+class Configuration:
+    """
+    Build configuration.
+    """
+    def __init__(self, docker_build_configurations: BuildConfigurationContainer[DockerBuildConfiguration]=None,
+                 docker_registries: Iterable[DockerRegistry]=(), checksum_storage: ChecksumStorage=None):
+        self.docker_build_configurations = docker_build_configurations if docker_build_configurations is not None \
+            else BuildConfigurationContainer[DockerBuildConfiguration]()
+        self.docker_registries = list(docker_registries)
+        self.checksum_storage = checksum_storage if checksum_storage is not None else MemoryChecksumStorage()
+
+
+def read_configuration(location: str) -> Configuration:
+    """
+    Reads the configuration file in the given location.
+    :param location: location of the configuration file
+    :return: parsed configuration from file
+    """
+    with open(location, "r") as file:
+        raw_configuration = yaml.load(file)
+
+    return ConfigurationJSONDecoder().decode_parsed(raw_configuration)
+
+
+_disk_checksum_storage_mappings = [
+    JsonPropertyMapping(CHECKSUM_STORAGE_TYPE_LOCAL_PATH_PROPERTY, "storage_file_location", "storage_file_location")
+]
+DiskChecksumStorageJSONEncoder = MappingJSONEncoderClassBuilder(
+    DiskChecksumStorage, _disk_checksum_storage_mappings).build()
+DiskChecksumStorageJSONDecoder = MappingJSONDecoderClassBuilder(
+    DiskChecksumStorage, _disk_checksum_storage_mappings).build()
+
+_consul_checksum_storage_mappings = [
+    JsonPropertyMapping(CHECKSUM_STORAGE_TYPE_CONSUL_KEY_PROPERTY, "data_key", "data_key")
+]
+ConsulChecksumStorageJSONEncoder = MappingJSONEncoderClassBuilder(
+    ConsulChecksumStorage, _consul_checksum_storage_mappings).build()
+ConsulChecksumStorageJSONDecoder = MappingJSONDecoderClassBuilder(
+    ConsulChecksumStorage, _consul_checksum_storage_mappings).build()
+
+
+class ChecksumStorageJSONDecoder(JSONDecoder):
+    def decode(self, obj_as_json, **kwargs):
+        parsed_json = super().decode(obj_as_json)
+        if parsed_json[CHECKSUM_STORAGE_TYPE_PROPERTY] == CHECKSUM_STORAGE_TYPE_VALUE_MAP[MemoryChecksumStorage]:
+            return MemoryChecksumStorage()
+        return {
+            CHECKSUM_STORAGE_TYPE_VALUE_MAP[DiskChecksumStorage]: DiskChecksumStorageJSONDecoder(),
+            CHECKSUM_STORAGE_TYPE_VALUE_MAP[ConsulChecksumStorage]: ConsulChecksumStorageJSONDecoder()
+        }[parsed_json[CHECKSUM_STORAGE_TYPE_PROPERTY]].decode(obj_as_json)
+
+
+class ChecksumStorageJSONEncoder(JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, MemoryChecksumStorage):
+            encoded = {}
+        else:
+            encoded = {
+                DiskChecksumStorage: DiskChecksumStorageJSONEncoder(),
+                ConsulChecksumStorage: ConsulChecksumStorageJSONEncoder()
+            }[type(obj)].default(obj)
+        encoded.update({
+            CHECKSUM_STORAGE_TYPE_PROPERTY: CHECKSUM_STORAGE_TYPE_VALUE_MAP[type(obj)]
+        })
+        return encoded
 
 
 _docker_build_configuration_mappings = [
@@ -44,27 +121,26 @@ DockerBuildConfigurationJSONDecoder = MappingJSONDecoderClassBuilder(
     DockerBuildConfiguration, _docker_build_configuration_mappings).build()
 
 
-_file_configuration_mappings = [
-    JsonPropertyMapping(DOCKER_IMAGES_PROPERTY,
-                        "docker_build_configurations",
-                        "docker_build_configurations",
-                        collection_factory=BuildConfigurationContainer,
-                        encoder_cls=DockerBuildConfigurationJSONEncoder,
-                        decoder_cls=DockerBuildConfigurationJSONDecoder)
+_docker_registry_mappings = [
+    JsonPropertyMapping(DOCKER_REGISTRY_URL, "url", "url"),
+    JsonPropertyMapping(DOCKER_REGISTRY_USERNAME, "username", optional=True),
+    JsonPropertyMapping(DOCKER_REGISTRY_PASSWORD, "password", optional=True)
 ]
-FileConfigurationJSONEncoder = MappingJSONEncoderClassBuilder(
-    FileConfiguration, _file_configuration_mappings).build()
-FileConfigurationJSONDecoder = MappingJSONDecoderClassBuilder(
-    FileConfiguration, _file_configuration_mappings).build()
+DockerRegistryJSONEncoder = MappingJSONEncoderClassBuilder(DockerRegistry, _docker_registry_mappings).build()
+DockerRegistryJSONDecoder = MappingJSONDecoderClassBuilder(DockerRegistry, _docker_registry_mappings).build()
 
 
-def read_file_configuration(location: str) -> FileConfiguration:
-    """
-    Reads the configuration file in the given location.
-    :param location: location of the configuration file
-    :return: parsed configuration from file
-    """
-    with open(location, "r") as file:
-        raw_configuration = yaml.load(file)
-
-    return FileConfigurationJSONDecoder().decode_parsed(raw_configuration)
+_configuration_mappings = [
+    JsonPropertyMapping(
+        DOCKER_IMAGES_PROPERTY, "docker_build_configurations", "docker_build_configurations",
+        collection_factory=BuildConfigurationContainer, parent_json_properties=[DOCKER_PROPERTY],
+        encoder_cls=DockerBuildConfigurationJSONEncoder, decoder_cls=DockerBuildConfigurationJSONDecoder),
+    JsonPropertyMapping(
+        DOCKER_REGISTRIES_PROPERTY, "docker_registries", "docker_registries", parent_json_properties=[DOCKER_PROPERTY],
+        encoder_cls=DockerRegistryJSONEncoder, decoder_cls=DockerRegistryJSONDecoder, optional=True),
+    JsonPropertyMapping(
+        CHECKSUM_STORAGE_PROPERTY, "checksum_storage", "checksum_storage", encoder_cls=ChecksumStorageJSONEncoder,
+        decoder_cls=ChecksumStorageJSONDecoder, optional=True)
+]
+ConfigurationJSONEncoder = MappingJSONEncoderClassBuilder(Configuration, _configuration_mappings).build()
+ConfigurationJSONDecoder = MappingJSONDecoderClassBuilder(Configuration, _configuration_mappings).build()

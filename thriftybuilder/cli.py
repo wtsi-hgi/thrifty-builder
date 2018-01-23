@@ -2,22 +2,21 @@ import json
 import logging
 import sys
 from argparse import ArgumentParser
-from json import JSONDecodeError
 from typing import List, NamedTuple, Dict, Optional
 
+from thriftybuilder._logging import create_logger
 from thriftybuilder.builders import DockerBuilder
-from thriftybuilder.configuration import read_file_configuration
+from thriftybuilder.configuration import read_configuration
 from thriftybuilder.exceptions import ThriftyBuilderBaseError
 from thriftybuilder.meta import DESCRIPTION, VERSION, PACKAGE_NAME
-from thriftybuilder.storage import MemoryChecksumStorage, DiskChecksumStorage, ConsulChecksumStorage
+from thriftybuilder.storage import MemoryChecksumStorage
 from thriftybuilder.uploader import DockerUploader
 
 VERBOSE_CLI_SHORT_PARAMETER = "v"
 CONFIGURATION_LOCATION_PARAMETER = "configuration-location"
 DEFAULT_LOG_VERBOSITY = logging.WARN
-CHECKSUM_SOURCE_LOCAL_PATH_LONG_PARAMETER = "checksums-from-path"
-CHECKSUM_SOURCE_CONSUL_KEY_LONG_PARAMETER = "checksums-from-consul-key"
-DOCKER_REPOSITORY_LONG_PARAMETER = "docker-repository"
+
+logger = create_logger(__name__)
 
 
 class InvalidCliArgumentError(ThriftyBuilderBaseError):
@@ -38,7 +37,6 @@ class CliConfiguration(NamedTuple):
     """
     configuration_location: str
     log_verbosity: int = DEFAULT_LOG_VERBOSITY
-    docker_repositories: List[str] = ()
 
 
 def _create_parser() -> ArgumentParser:
@@ -50,12 +48,6 @@ def _create_parser() -> ArgumentParser:
     parser = ArgumentParser(description=f"{DESCRIPTION} (v{VERSION})")
     parser.add_argument(f"-{VERBOSE_CLI_SHORT_PARAMETER}", action="count", default=0,
                         help="increase the level of log verbosity (add multiple increase further)")
-    parser.add_argument(f"--{CHECKSUM_SOURCE_LOCAL_PATH_LONG_PARAMETER}", type=str,
-                        help="TODO")
-    parser.add_argument(f"--{CHECKSUM_SOURCE_CONSUL_KEY_LONG_PARAMETER}", type=str,
-                        help="TODO")
-    parser.add_argument(f"--{DOCKER_REPOSITORY_LONG_PARAMETER}", action="append", default=[],
-                        help="TODO")
     parser.add_argument(CONFIGURATION_LOCATION_PARAMETER, type=str,
                         help="location of configuration")
     return parser
@@ -82,26 +74,8 @@ def parse_cli_configuration(arguments: List[str]) -> CliConfiguration:
     :return: parsed configuration
     """
     parsed_arguments = {x.replace("_", "-"): y for x, y in vars(_create_parser().parse_args(arguments)).items()}
-    checksum_source = ChecksumSource.STDIN
-
-    checksum_local_path = parsed_arguments.get(CHECKSUM_SOURCE_LOCAL_PATH_LONG_PARAMETER)
-    if checksum_local_path is not None:
-        checksum_source = ChecksumSource.LOCAL
-
-    consul_key = parsed_arguments.get(CHECKSUM_SOURCE_CONSUL_KEY_LONG_PARAMETER)
-    if consul_key is not None:
-        if checksum_source == ChecksumSource.LOCAL:
-            raise InvalidCliArgumentError("Ambiguous checksum source - both local and Consul settings given")
-        checksum_source = ChecksumSource.CONSUL
-
-    configuration_location = parsed_arguments[CONFIGURATION_LOCATION_PARAMETER]
-
     return CliConfiguration(log_verbosity=_get_verbosity(parsed_arguments),
-                            checksum_source=checksum_source,
-                            checksum_local_path=checksum_local_path,
-                            checksum_consul_key=consul_key,
-                            docker_repositories=parsed_arguments[DOCKER_REPOSITORY_LONG_PARAMETER],
-                            configuration_location=configuration_location)
+                            configuration_location=parsed_arguments[CONFIGURATION_LOCATION_PARAMETER])
 
 
 def main(cli_arguments: List[str], stdin_content: Optional[str]=None):
@@ -112,36 +86,35 @@ def main(cli_arguments: List[str], stdin_content: Optional[str]=None):
     :raises SystemExit: always raised
     """
     cli_configuration = parse_cli_configuration(cli_arguments)
-    configuration = read_file_configuration(cli_configuration.configuration_location)
+    configuration = read_configuration(cli_configuration.configuration_location)
 
     if cli_configuration.log_verbosity:
         logging.getLogger(PACKAGE_NAME).setLevel(cli_configuration.log_verbosity)
 
-    checksum_storage = None
-    if cli_configuration.checksum_source == ChecksumSource.STDIN and stdin_content is not None:
-        checksums_as_json_string = stdin_content
-        try:
-            checksums_as_json = json.loads(checksums_as_json_string)
-        except JSONDecodeError as e:
-            raise UnreadableChecksumStorageError(checksums_as_json_string) from e
-        checksum_storage = MemoryChecksumStorage(checksums_as_json)
-    elif cli_configuration.checksum_source == ChecksumSource.LOCAL:
-        checksum_storage = DiskChecksumStorage(cli_configuration.checksum_local_path)
-    elif cli_configuration.checksum_source == ChecksumSource.CONSUL:
-        checksum_storage = ConsulChecksumStorage(cli_configuration.checksum_consul_key)
+    if isinstance(configuration.checksum_storage, MemoryChecksumStorage) and stdin_content is not None:
+        logger.info("Reading checksums from stdin")
+        configuration.checksum_storage.set_all_checksums(json.loads(stdin_content))
 
-    docker_builder = DockerBuilder(
-        managed_build_configurations=configuration.docker_build_configurations, checksum_storage=checksum_storage)
+    docker_builder = DockerBuilder(managed_build_configurations=configuration.docker_build_configurations,
+                                   checksum_storage=configuration.checksum_storage)
     build_results = docker_builder.build_all()
 
-    if len(cli_configuration.docker_repositories) > 0:
-        for repository in cli_configuration.docker_repositories:
-            uploader = DockerUploader(checksum_storage, repository)
+    if len(configuration.docker_registries) > 0:
+        for repository in configuration.docker_registries:
+            uploader = DockerUploader(configuration.checksum_storage, repository)
             for configuration in build_results.keys():
                 uploader.upload(configuration)
 
-    print(json.dumps({configuration.identifier: docker_builder.checksum_calculator.calculate_checksum(configuration)
-                      for configuration in build_results.keys()}))
+    output: Dict[str, str] = {}
+    built_now: List[str] = []
+    for build_configuration in configuration.docker_build_configurations:
+        checksum = docker_builder.checksum_calculator.calculate_checksum(build_configuration)
+        output[build_configuration.identifier] = checksum
+        if build_configuration in build_results:
+            built_now.append(build_configuration.identifier)
+
+    logger.info(f"Build results: %s" % json.dumps({key: value for key, value in output.items() if key in built_now}))
+    print(output)
 
     exit(0)
 
@@ -155,3 +128,4 @@ def entrypoint():
 
 if __name__ == "__main__":
     entrypoint()
+

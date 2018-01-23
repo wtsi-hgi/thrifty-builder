@@ -5,6 +5,7 @@ from typing import Generic
 from thriftybuilder.builders import DockerBuilder
 from thriftybuilder.checksums import ChecksumCalculator, DockerChecksumCalculator
 from thriftybuilder.build_configurations import BuildConfigurationType, DockerBuildConfiguration
+from thriftybuilder.configuration import DockerRegistry
 from thriftybuilder.storage import MemoryChecksumStorage
 from thriftybuilder.tests._common import TestWithDockerBuildConfiguration, TestWithDockerRegistry
 from thriftybuilder.uploader import DockerUploader, BuildArtifactUploader
@@ -69,7 +70,7 @@ class TestDockerUploader(_TestBuildArtifactUploader[DockerBuildConfiguration], T
         return DockerChecksumCalculator()
 
     def create_uploader(self) -> DockerUploader:
-        return DockerUploader(self.checksum_storage, self.registry_location, self.checksum_calculator)
+        return DockerUploader(self.checksum_storage, DockerRegistry(self.registry_location), self.checksum_calculator)
 
     def create_built_configuration(self) -> DockerBuildConfiguration:
         _, configuration = self.create_docker_setup()
