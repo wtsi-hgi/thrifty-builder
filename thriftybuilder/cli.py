@@ -99,6 +99,7 @@ def main(cli_arguments: List[str], stdin_content: Optional[str]=None):
     if cli_configuration.log_verbosity:
         logging.getLogger(PACKAGE_NAME).setLevel(cli_configuration.log_verbosity)
 
+    logger.debug(f"Checksum storage: {configuration.checksum_storage}")
     if isinstance(configuration.checksum_storage, MemoryChecksumStorage) and stdin_content:
         logger.info("Reading checksums from stdin")
         configuration.checksum_storage.set_all_checksums(json.loads(stdin_content))

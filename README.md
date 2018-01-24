@@ -19,5 +19,5 @@ docker:
     
 checksum_storage:
   type: consul
-  key: /image-checksums
+  key: image-checksums
 ```

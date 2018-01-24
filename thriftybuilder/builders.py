@@ -118,7 +118,7 @@ class Builder(Generic[BuildConfigurationType, BuildResultType], BuildConfigurati
         Builds all managed images and their managed dependencies.
         :return: mapping between built configurations and their associated build result
         """
-        logger.info("Building all")
+        logger.info("Building all...")
 
         all_build_results: Dict[BuildConfigurationType: BuildResultType] = {}
         left_to_build: Set[BuildConfigurationType] = set(self.managed_build_configurations)
