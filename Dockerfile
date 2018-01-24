@@ -33,4 +33,4 @@ RUN python setup.py install
 RUN pip install -r consul-requirements.txt
 
 WORKDIR "/root"
-CMD ["thrifty"]
+ENTRYPOINT ["thrifty"]

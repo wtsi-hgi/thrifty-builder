@@ -4,4 +4,3 @@ zgitignore>=0.8.0
 docker>=2.7.0
 pyyaml>=3.12
 hgijson>=3.1.0
-
