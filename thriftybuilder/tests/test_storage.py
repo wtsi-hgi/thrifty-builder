@@ -10,7 +10,8 @@ EXAMPLE_1_CONFIGURATION_ID = "example-1"
 EXAMPLE_1_CHECKSUM = "c02696b94a1787cdbe072931225d4dbc"
 EXAMPLE_2_CONFIGURATION_ID = "example-2"
 EXAMPLE_2_CHECKSUM = "f9f601085a99e4e1531bdad52771084b"
-EXAMPLE_CONSUL_KEY = "example-key"
+EXAMPLE_1_CONSUL_KEY = "example-key-1"
+EXAMPLE_2_CONSUL_KEY = "example-key-2"
 
 
 class _TestChecksumStorage(unittest.TestCase, metaclass=ABCMeta):
@@ -90,11 +91,11 @@ class TestConsulChecksumStorage(_TestChecksumStorage, TestWithConsulService):
     Tests for `ConsulChecksumStorage`.
     """
     def create_storage(self) -> ChecksumStorage:
-        return ConsulChecksumStorage(EXAMPLE_CONSUL_KEY, consul_client=self.consul_client)
+        return ConsulChecksumStorage(EXAMPLE_1_CONSUL_KEY, EXAMPLE_2_CONSUL_KEY, consul_client=self.consul_client)
 
     def test_create_init_with_explicit_configuration(self):
-        storage = ConsulChecksumStorage(
-            EXAMPLE_CONSUL_KEY, url=self.consul_client.http.base_uri, token=self.consul_client.token)
+        storage = ConsulChecksumStorage(EXAMPLE_1_CONSUL_KEY, EXAMPLE_2_CONSUL_KEY,
+                                        url=self.consul_client.http.base_uri, token=self.consul_client.token)
         storage.set_checksum(EXAMPLE_1_CONFIGURATION_ID, EXAMPLE_1_CHECKSUM)
         self.assertEqual(EXAMPLE_1_CHECKSUM, storage.get_checksum(EXAMPLE_1_CONFIGURATION_ID))
 
