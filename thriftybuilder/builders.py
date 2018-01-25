@@ -147,7 +147,8 @@ class Builder(Generic[BuildConfigurationType, BuildResultType], BuildConfigurati
 
         current_checksum = self.checksum_calculator.calculate_checksum(build_configuration)
         up_to_date = existing_checksum == current_checksum
-        logger.debug(f"Determined that \"{build_configuration.identifier}\" (listed by Docker server) is"
+        # TODO: this assumes that all of the Docker registries contain the correct image...
+        logger.debug(f"Determined that \"{build_configuration.identifier}\" is "
                      f"{'' if up_to_date else ' not'} up-to-date (checksum={current_checksum})")
         return up_to_date
 
@@ -168,7 +169,7 @@ class DockerBuilder(Builder[DockerBuildConfiguration, str]):
 
     def _build(self, build_configuration: DockerBuildConfiguration) -> str:
         logger.info(f"Building Docker image: {build_configuration.identifier}")
-        logger.debug(f"{build_configuration.identifier} to be build using dockerfile "
+        logger.debug(f"{build_configuration.identifier} to be built using dockerfile "
                      f"\"{build_configuration.dockerfile_location}\" in context \"{build_configuration.context}\"")
         # TODO: Support setting `squash`: https://docker-py.readthedocs.io/en/stable/images.html
         log_generator = self._docker_client.build(path=build_configuration.context, tag=build_configuration.identifier,
