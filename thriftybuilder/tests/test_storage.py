@@ -5,13 +5,8 @@ from tempfile import NamedTemporaryFile
 
 from thriftybuilder.storage import ChecksumStorage, MemoryChecksumStorage, DiskChecksumStorage, ConsulChecksumStorage
 from thriftybuilder.tests._common import TestWithConsulService
-
-EXAMPLE_1_CONFIGURATION_ID = "example-1"
-EXAMPLE_1_CHECKSUM = "c02696b94a1787cdbe072931225d4dbc"
-EXAMPLE_2_CONFIGURATION_ID = "example-2"
-EXAMPLE_2_CHECKSUM = "f9f601085a99e4e1531bdad52771084b"
-EXAMPLE_1_CONSUL_KEY = "example-key-1"
-EXAMPLE_2_CONSUL_KEY = "example-key-2"
+from thriftybuilder.tests._examples import EXAMPLE_1_CONFIGURATION_ID, EXAMPLE_1_CHECKSUM, EXAMPLE_2_CONFIGURATION_ID, \
+    EXAMPLE_2_CHECKSUM, EXAMPLE_1_CONSUL_KEY, EXAMPLE_2_CONSUL_KEY
 
 
 class _TestChecksumStorage(unittest.TestCase, metaclass=ABCMeta):

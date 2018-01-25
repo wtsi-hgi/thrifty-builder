@@ -13,6 +13,7 @@ from thriftybuilder.containers import BuildConfigurationContainer
 from thriftybuilder.storage import MemoryChecksumStorage, DiskChecksumStorage, ConsulChecksumStorage
 from thriftybuilder.tests._common import TestWithDockerBuildConfiguration, TestWithConsulService, \
     TestWithDockerRegistry, TestWithConfiguration
+from thriftybuilder.tests._examples import EXAMPLE_1_CONSUL_KEY, EXAMPLE_2_CONSUL_KEY
 
 
 class TestMain(TestWithDockerBuildConfiguration, TestWithConsulService, TestWithDockerRegistry, TestWithConfiguration):
@@ -61,11 +62,10 @@ class TestMain(TestWithDockerBuildConfiguration, TestWithConsulService, TestWith
         self.assertEqual(json.loads(stdout).keys(), expected)
 
     def test_build_when_consul_checksums(self):
-        test_key = "example-key"
         checksums_as_json = json.dumps(self.run_configuration.checksum_storage.get_all_checksums())
-        self.consul_client.kv.put(test_key, checksums_as_json)
+        self.consul_client.kv.put(EXAMPLE_1_CONSUL_KEY, checksums_as_json)
         self.consul_service.setup_environment()
-        self.run_configuration.checksum_storage = ConsulChecksumStorage(test_key)
+        self.run_configuration.checksum_storage = ConsulChecksumStorage(EXAMPLE_1_CONSUL_KEY, EXAMPLE_2_CONSUL_KEY)
 
         stdout, stderr = self._run(self.run_configuration)
 

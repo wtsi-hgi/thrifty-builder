@@ -25,6 +25,7 @@ COPY_DOCKER_COMMAND = "COPY"
 
 _RANDOM_NAME = object()
 
+# To avoid a nasty circular dependency, DO NOT move this import up
 from thriftybuilder.tests._examples import name_generator, EXAMPLE_FROM_IMAGE_NAME
 
 

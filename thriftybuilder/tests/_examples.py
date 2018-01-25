@@ -14,6 +14,14 @@ EXAMPLE_FILE_CONTENTS_2 = "testing2"
 
 EXAMPLE_RUN_COMMAND = f"{RUN_DOCKER_COMMAND} echo test"
 
+EXAMPLE_1_CONFIGURATION_ID = "example-configuration-id-1"
+EXAMPLE_1_CHECKSUM = "c02696b94a1787cdbe072931225d4dbc"
+EXAMPLE_2_CONFIGURATION_ID = "example-configuration-id-2"
+EXAMPLE_2_CHECKSUM = "f9f601085a99e4e1531bdad52771084b"
+
+EXAMPLE_1_CONSUL_KEY = "example-key-1"
+EXAMPLE_2_CONSUL_KEY = "example-key-2"
+
 
 def name_generator(identifier: str= "") -> str:
     """
@@ -22,3 +30,4 @@ def name_generator(identifier: str= "") -> str:
     :return: the generated name
     """
     return f"thrifty-builder-test-{identifier}{uuid4()}"
+
