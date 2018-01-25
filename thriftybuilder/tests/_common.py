@@ -3,10 +3,11 @@ import os
 import shutil
 import unittest
 from abc import ABCMeta
-from tempfile import mkdtemp
+from tempfile import mkdtemp, NamedTemporaryFile
 from typing import List, Dict, Optional, Tuple, Iterable
 
 import docker
+import yaml
 from consul import Consul
 from docker.errors import ImageNotFound, NullResource, NotFound
 from useintest.predefined.consul import ConsulServiceController, ConsulDockerisedService
@@ -14,6 +15,7 @@ from useintest.services._builders import DockerisedServiceControllerTypeBuilder
 from useintest.services.models import DockerisedService
 
 from thriftybuilder.build_configurations import DockerBuildConfiguration
+from thriftybuilder.configuration import ConfigurationJSONEncoder, Configuration
 
 DOCKERFILE_PATH = "Dockerfile"
 FROM_DOCKER_COMMAND = "FROM"
@@ -180,3 +182,30 @@ class TestWithDockerRegistry(unittest.TestCase, metaclass=ABCMeta):
             return True
         except NotFound:
             return False
+
+
+class TestWithConfiguration(unittest.TestCase, metaclass=ABCMeta):
+    """
+    Base class for tests that use a configuration.
+    """
+    def setUp(self):
+        super().setUp()
+        self._file_configuration_locations: List[str] = []
+
+    def tearDown(self):
+        super().tearDown()
+        for location in self._file_configuration_locations:
+            os.remove(location)
+
+    def configuration_to_file(self, configuration: Configuration) -> str:
+        """
+        Writes the given configuration to a temp file.
+        :param configuration: the configuration to write to file
+        :return: location of the written file
+        """
+        temp_file = NamedTemporaryFile(delete=False)
+        self._file_configuration_locations.append(temp_file.name)
+        file_configuration_as_json = ConfigurationJSONEncoder().default(configuration)
+        with open(temp_file.name, "w") as file:
+            yaml.dump(file_configuration_as_json, file, default_style="\"")
+        return temp_file.name

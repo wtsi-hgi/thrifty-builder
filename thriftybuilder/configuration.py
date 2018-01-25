@@ -4,6 +4,7 @@ from typing import Iterable, Dict
 import os
 import yaml
 from hgijson import JsonPropertyMapping, MappingJSONEncoderClassBuilder, MappingJSONDecoderClassBuilder
+from jinja2 import Template
 
 from thriftybuilder.build_configurations import DockerBuildConfiguration
 from thriftybuilder.containers import BuildConfigurationContainer
@@ -63,7 +64,9 @@ def read_configuration(location: str) -> Configuration:
     location = _process_path(location)
 
     with open(location, "r") as file:
-        raw_configuration = yaml.load(file)
+        file_context = file.read()
+        rendered_file_contents = Template(file_context).render(env=os.environ)
+        raw_configuration = yaml.load(rendered_file_contents)
 
     # Pre-process to convert relative paths to absolute
     paths_relative_to = os.path.abspath(os.path.dirname(location))
