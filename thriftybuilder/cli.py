@@ -90,7 +90,7 @@ def main(cli_arguments: List[str], stdin_content: Optional[str]=None):
     """
     Entrypoint.
     :param cli_arguments: arguments passed in via the CLI
-    :param stdin_content: TODO
+    :param stdin_content: content written on stdin
     :raises SystemExit: always raised
     """
     cli_configuration = parse_cli_configuration(cli_arguments)
@@ -115,7 +115,6 @@ def main(cli_arguments: List[str], stdin_content: Optional[str]=None):
             uploader = DockerUploader(configuration.checksum_storage, repository)
             for build_configuration in build_results.keys():
                 uploader.upload(build_configuration)
-
 
     all_built: Dict[str, str] = {}
     built_now: Dict[str, str] = {}

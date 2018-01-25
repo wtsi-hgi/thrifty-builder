@@ -14,8 +14,8 @@ docker:
       # Context assumed to be /images/image-2 
   registries:
     - url: https://docker.io
-      username: example
-      password: other-example
+      username: "{{ env[DOCKER_IO_USERNAME] }}"
+      password: "{{ env[DOCKER_IO_PASSWORD] }}"
     
 checksum_storage:
   type: consul

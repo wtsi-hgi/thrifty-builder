@@ -1,28 +1,26 @@
 import json
-import os
 import unittest
 from tempfile import NamedTemporaryFile
-from typing import List, Tuple
+from typing import Tuple
 
-import yaml
 from capturewrap import CaptureWrapBuilder
 
 from thriftybuilder.build_configurations import DockerBuildConfiguration
 from thriftybuilder.builders import DockerBuilder
 from thriftybuilder.cli import main, OUTPUT_BUILT_ONLY_LONG_PARAMETER
-from thriftybuilder.configuration import Configuration, ConfigurationJSONEncoder, DockerRegistry
+from thriftybuilder.configuration import Configuration, DockerRegistry
 from thriftybuilder.containers import BuildConfigurationContainer
 from thriftybuilder.storage import MemoryChecksumStorage, DiskChecksumStorage, ConsulChecksumStorage
-from thriftybuilder.tests._common import TestWithDockerBuildConfiguration, TestWithConsulService, TestWithDockerRegistry
+from thriftybuilder.tests._common import TestWithDockerBuildConfiguration, TestWithConsulService, \
+    TestWithDockerRegistry, TestWithConfiguration
 
 
-class TestMain(TestWithDockerBuildConfiguration, TestWithConsulService, TestWithDockerRegistry):
+class TestMain(TestWithDockerBuildConfiguration, TestWithConsulService, TestWithDockerRegistry, TestWithConfiguration):
     """
     Tests for CLI.
     """
     def setUp(self):
         super().setUp()
-        self._file_configuration_locations: List[str] = []
         self._captured_main = CaptureWrapBuilder(
             capture_stdout=True, capture_exceptions=lambda e: isinstance(e, SystemExit) and e.code == 0).build(main)
 
@@ -37,11 +35,6 @@ class TestMain(TestWithDockerBuildConfiguration, TestWithConsulService, TestWith
         self.run_configuration.checksum_storage = MemoryChecksumStorage({
             self.pre_built_configuration.identifier:
                 builder.checksum_calculator.calculate_checksum(self.pre_built_configuration)})
-
-    def tearDown(self):
-        super().tearDown()
-        for location in self._file_configuration_locations:
-            os.remove(location)
 
     def test_build_when_no_checksums(self):
         stdout, stderr = self._run(self.run_configuration)
@@ -104,25 +97,12 @@ class TestMain(TestWithDockerBuildConfiguration, TestWithConsulService, TestWith
         :return: tuple where the first element is what was written to stdout and the second is that which has gone to
         stderr
         """
-        file_configuration_location = self._file_configuration_to_file(configuration)
+        file_configuration_location = self.configuration_to_file(configuration)
         arguments = [file_configuration_location]
         if output_built_only:
             arguments.insert(0, f"--{OUTPUT_BUILT_ONLY_LONG_PARAMETER}")
         result = self._captured_main(arguments, stdin)
         return result.stdout, result.stderr
-
-    def _file_configuration_to_file(self, file_configuration: Configuration) -> str:
-        """
-        Writes the given file configuration to a temp file.
-        :param file_configuration: the file configuration to write to file
-        :return: location of the written file
-        """
-        temp_file = NamedTemporaryFile(delete=False)
-        self._file_configuration_locations.append(temp_file.name)
-        file_configuration_as_json = ConfigurationJSONEncoder().default(file_configuration)
-        with open(temp_file.name, "w") as file:
-            yaml.dump(file_configuration_as_json, file)
-        return temp_file.name
 
 
 if __name__ == "__main__":
