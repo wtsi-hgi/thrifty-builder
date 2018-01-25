@@ -3,7 +3,8 @@ import os
 from abc import ABCMeta, abstractmethod
 from copy import copy
 
-from typing import Optional, Dict, Mapping
+from typing import Optional, Dict, Mapping, Type
+from urllib.parse import urlparse
 
 from thriftybuilder.exceptions import MissingOptionalDependencyError
 
@@ -116,19 +117,48 @@ class ConsulChecksumStorage(ChecksumStorage):
     CONSUL_HTTP_TOKEN_ENVIRONMENT_VARIABLE = "CONSUL_HTTP_TOKEN"
     TEXT_ENCODING = "utf-8"
 
-    def __init__(self, data_key: str, consul_client=None, *args, **kwargs):
+    @staticmethod
+    def _load_consul_class() -> Type:
+        """
+        TODO
+        :return:
+        """
         try:
             from consul import Consul
         except ImportError as e:
             raise MissingOptionalDependencyError(
                 "You must install `python-consul` separately to use this type of storage") from e
+        return Consul
+
+    @property
+    def url(self) -> str:
+        return self._consul_client.http.base_uri
+    
+    @property
+    def token(self) -> str:
+        return self._consul_client.token
+
+    def __init__(self, data_key: str, url: str=None, token: str=None, consul_client=None, *args, **kwargs):
+        Consul = ConsulChecksumStorage._load_consul_class()
+
+        if url is not None and consul_client is not None:
+            raise ValueError("Cannot use both `url` and `consul_client`")
 
         self.data_key = data_key
-        self._consul_client = consul_client if consul_client is not None else Consul()
 
-        if ConsulChecksumStorage.CONSUL_HTTP_TOKEN_ENVIRONMENT_VARIABLE in os.environ:
+        consul_client_kwargs: Dict = {}
+        if url is not None:
+            parsed_url = urlparse(url)
+            consul_client_kwargs["host"] = parsed_url.hostname
+            consul_client_kwargs["port"] = parsed_url.port
+            consul_client_kwargs["scheme"] = parsed_url.scheme if len(parsed_url.scheme) > 0 else None
+        self._consul_client = consul_client if consul_client is not None else Consul(**consul_client_kwargs)
+
+        if token is None:
+            token = os.environ.get(ConsulChecksumStorage.CONSUL_HTTP_TOKEN_ENVIRONMENT_VARIABLE, None)
+        if token is not None:
             # Work around for https://github.com/cablehead/python-consul/issues/170
-            token = ConsulChecksumStorage.CONSUL_HTTP_TOKEN_ENVIRONMENT_VARIABLE
+            self._consul_client.token = token
             self._consul_client.http.session.headers.update({"X-Consul-Token": token})
 
         super().__init__(*args, **kwargs)

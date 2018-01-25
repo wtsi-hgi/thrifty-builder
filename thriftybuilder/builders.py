@@ -170,8 +170,7 @@ class DockerBuilder(Builder[DockerBuildConfiguration, str]):
         logger.info(f"Building Docker image: {build_configuration.identifier}")
         logger.debug(f"{build_configuration.identifier} to be build using dockerfile "
                      f"\"{build_configuration.dockerfile_location}\" in context \"{build_configuration.context}\"")
-        # TODO: Control `nocache`
-        # TODO: Consider setting `cache_from`: https://docker-py.readthedocs.io/en/stable/images.html
+        # TODO: Support setting `squash`: https://docker-py.readthedocs.io/en/stable/images.html
         log_generator = self._docker_client.build(path=build_configuration.context, tag=build_configuration.identifier,
                                                   dockerfile=build_configuration.dockerfile_location, decode=True)
 

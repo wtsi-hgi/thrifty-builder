@@ -31,6 +31,8 @@ CHECKSUM_STORAGE_TYPE_VALUE_MAP = {
 }
 CHECKSUM_STORAGE_TYPE_LOCAL_PATH_PROPERTY = "path"
 CHECKSUM_STORAGE_TYPE_CONSUL_KEY_PROPERTY = "key"
+CHECKSUM_STORAGE_TYPE_CONSUL_URL_PROPERTY = "url"
+CHECKSUM_STORAGE_TYPE_CONSUL_TOKEN_PROPERTY = "token"
 
 
 class DockerRegistry:
@@ -107,7 +109,9 @@ DiskChecksumStorageJSONDecoder = MappingJSONDecoderClassBuilder(
     DiskChecksumStorage, _disk_checksum_storage_mappings).build()
 
 _consul_checksum_storage_mappings = [
-    JsonPropertyMapping(CHECKSUM_STORAGE_TYPE_CONSUL_KEY_PROPERTY, "data_key", "data_key")
+    JsonPropertyMapping(CHECKSUM_STORAGE_TYPE_CONSUL_KEY_PROPERTY, "data_key", "data_key"),
+    JsonPropertyMapping(CHECKSUM_STORAGE_TYPE_CONSUL_URL_PROPERTY, "url", "url", optional=True),
+    JsonPropertyMapping(CHECKSUM_STORAGE_TYPE_CONSUL_TOKEN_PROPERTY, "token", "token", optional=True)
 ]
 ConsulChecksumStorageJSONEncoder = MappingJSONEncoderClassBuilder(
     ConsulChecksumStorage, _consul_checksum_storage_mappings).build()
