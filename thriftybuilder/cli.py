@@ -99,7 +99,7 @@ def main(cli_arguments: List[str], stdin_content: Optional[str]=None):
     if cli_configuration.log_verbosity:
         logging.getLogger(PACKAGE_NAME).setLevel(cli_configuration.log_verbosity)
 
-    logger.debug(f"Checksum storage: {configuration.checksum_storage}")
+    logger.debug(f"Checksum storage: {configuration.checksum_storage.__class__.__name__}")
     if isinstance(configuration.checksum_storage, MemoryChecksumStorage) and stdin_content:
         logger.info("Reading checksums from stdin")
         configuration.checksum_storage.set_all_checksums(json.loads(stdin_content))
@@ -108,11 +108,14 @@ def main(cli_arguments: List[str], stdin_content: Optional[str]=None):
                                    checksum_storage=configuration.checksum_storage)
     build_results = docker_builder.build_all()
 
-    if len(configuration.docker_registries) > 0:
+    if len(configuration.docker_registries) == 0:
+        logger.info("No Docker registries defined so will not upload images (or update checksums in store)")
+    else:
         for repository in configuration.docker_registries:
             uploader = DockerUploader(configuration.checksum_storage, repository)
             for build_configuration in build_results.keys():
                 uploader.upload(build_configuration)
+
 
     all_built: Dict[str, str] = {}
     built_now: Dict[str, str] = {}
