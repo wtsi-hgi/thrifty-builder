@@ -6,6 +6,9 @@ from copy import copy
 from typing import Optional, Dict, Mapping, Type
 from urllib.parse import urlparse
 
+from consullock.configuration import get_consul_configuration_from_environment
+from consullock.managers import ConsulLockManager
+
 from thriftybuilder.exceptions import MissingOptionalDependencyError
 
 
@@ -115,6 +118,7 @@ class ConsulChecksumStorage(ChecksumStorage):
     Not safe to use on same key in parallel.
     """
     CONSUL_HTTP_TOKEN_ENVIRONMENT_VARIABLE = "CONSUL_HTTP_TOKEN"
+    CONSUL_SESSION_LOCK_DEFAULT_TIMEOUT = 120
     TEXT_ENCODING = "utf-8"
 
     @staticmethod
@@ -138,13 +142,15 @@ class ConsulChecksumStorage(ChecksumStorage):
     def token(self) -> str:
         return self._consul_client.token
 
-    def __init__(self, data_key: str, url: str=None, token: str=None, consul_client=None, *args, **kwargs):
+    def __init__(self, data_key: str, lock_key: str, url: str=None, token: str=None, consul_client=None,
+                 configuration_checksum_mappings: Mapping[str, str] = None):
         Consul = ConsulChecksumStorage._load_consul_class()
 
         if url is not None and consul_client is not None:
             raise ValueError("Cannot use both `url` and `consul_client`")
 
         self.data_key = data_key
+        self.lock_key = lock_key
 
         consul_client_kwargs: Dict = {}
         if url is not None:
@@ -161,7 +167,11 @@ class ConsulChecksumStorage(ChecksumStorage):
             self._consul_client.token = token
             self._consul_client.http.session.headers.update({"X-Consul-Token": token})
 
-        super().__init__(*args, **kwargs)
+        self._lock_manager = ConsulLockManager(
+            consul_client=self._consul_client,
+            session_ttl_in_seconds=ConsulChecksumStorage.CONSUL_SESSION_LOCK_DEFAULT_TIMEOUT)
+
+        super().__init__(configuration_checksum_mappings)
 
     def get_checksum(self, configuration_id: str) -> Optional[str]:
         return self.get_all_checksums().get(configuration_id)
@@ -174,11 +184,13 @@ class ConsulChecksumStorage(ChecksumStorage):
         return json.loads(value)
 
     def set_checksum(self, configuration_id: str, checksum: str):
-        value = self.get_all_checksums()
-        value[configuration_id] = checksum
-        self._consul_client.kv.put(self.data_key, json.dumps(value, sort_keys=True))
+        with self._lock_manager.acquire(self.lock_key):
+            value = self.get_all_checksums()
+            value[configuration_id] = checksum
+            self._consul_client.kv.put(self.data_key, json.dumps(value, sort_keys=True))
 
     def set_all_checksums(self, configuration_checksum_mappings: Mapping[str, str]):
-        value = self.get_all_checksums()
-        value.update(configuration_checksum_mappings)
-        self._consul_client.kv.put(self.data_key, json.dumps(value, sort_keys=True))
+        with self._lock_manager.acquire(self.lock_key):
+            value = self.get_all_checksums()
+            value.update(configuration_checksum_mappings)
+            self._consul_client.kv.put(self.data_key, json.dumps(value, sort_keys=True))

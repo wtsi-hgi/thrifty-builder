@@ -30,7 +30,8 @@ CHECKSUM_STORAGE_TYPE_VALUE_MAP = {
     MemoryChecksumStorage: "stdio"
 }
 CHECKSUM_STORAGE_TYPE_LOCAL_PATH_PROPERTY = "path"
-CHECKSUM_STORAGE_TYPE_CONSUL_KEY_PROPERTY = "key"
+CHECKSUM_STORAGE_TYPE_CONSUL_DATA_KEY_PROPERTY = "key"
+CHECKSUM_STORAGE_TYPE_CONSUL_LOCK_KEY_PROPERTY = "lock"
 CHECKSUM_STORAGE_TYPE_CONSUL_URL_PROPERTY = "url"
 CHECKSUM_STORAGE_TYPE_CONSUL_TOKEN_PROPERTY = "token"
 
@@ -109,7 +110,8 @@ DiskChecksumStorageJSONDecoder = MappingJSONDecoderClassBuilder(
     DiskChecksumStorage, _disk_checksum_storage_mappings).build()
 
 _consul_checksum_storage_mappings = [
-    JsonPropertyMapping(CHECKSUM_STORAGE_TYPE_CONSUL_KEY_PROPERTY, "data_key", "data_key"),
+    JsonPropertyMapping(CHECKSUM_STORAGE_TYPE_CONSUL_DATA_KEY_PROPERTY, "data_key", "data_key"),
+    JsonPropertyMapping(CHECKSUM_STORAGE_TYPE_CONSUL_LOCK_KEY_PROPERTY, "lock_key", "lock_key", optional=True),
     JsonPropertyMapping(CHECKSUM_STORAGE_TYPE_CONSUL_URL_PROPERTY, "url", "url", optional=True),
     JsonPropertyMapping(CHECKSUM_STORAGE_TYPE_CONSUL_TOKEN_PROPERTY, "token", "token", optional=True)
 ]
