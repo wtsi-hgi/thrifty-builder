@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 
 from consullock.managers import ConsulLockManager
 
-from thriftybuilder.exceptions import MissingOptionalDependencyError
+from thriftybuilder.common import MissingOptionalDependencyError
 
 
 class ChecksumStorage(metaclass=ABCMeta):
@@ -49,8 +49,8 @@ class ChecksumStorage(metaclass=ABCMeta):
 
     def set_all_checksums(self, configuration_checksum_mappings: Mapping[str, str]):
         """
-        TODO
-        :param configuration_checksum_mappings:
+        Sets all of the checksums from the given id-checksum mappings.
+        :param configuration_checksum_mappings: id-checksum mappings
         """
         for configuration_id, checksum in configuration_checksum_mappings.items():
             self.set_checksum(configuration_id, checksum)
@@ -112,8 +112,6 @@ class DiskChecksumStorage(ChecksumStorage):
 class ConsulChecksumStorage(ChecksumStorage):
     """
     Consul storage for configuration -> checksum mappings.
-
-    Not safe to use on same key in parallel.
     """
     CONSUL_HTTP_TOKEN_ENVIRONMENT_VARIABLE = "CONSUL_HTTP_TOKEN"
     CONSUL_SESSION_LOCK_DEFAULT_TIMEOUT = 120

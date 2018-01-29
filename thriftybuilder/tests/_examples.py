@@ -30,4 +30,3 @@ def name_generator(identifier: str= "") -> str:
     :return: the generated name
     """
     return f"thrifty-builder-test-{identifier}{uuid4()}"
-

@@ -19,7 +19,7 @@ docker:
     
 checksum_storage:
   type: consul
-  url: https://example.com:8500   # Optional: derived from Consul environment variables if not set
-  token: abc123                   # Optional: derived from Consul environment variables if not set
+  url: https://example.com:8500           # Optional: derived from Consul environment variables if not set
+  token: "{{ env[CONSUL_HTTP_TOKEN] }}"   # Optional: derived from Consul environment variables if not set
   key: image-checksums
 ```

@@ -7,7 +7,7 @@ import docker
 from thriftybuilder._logging import create_logger
 from thriftybuilder.checksums import ChecksumCalculator, DockerChecksumCalculator
 from thriftybuilder.configuration import DockerRegistry
-from thriftybuilder.exceptions import ThriftyBuilderBaseError
+from thriftybuilder.common import ThriftyBuilderBaseError
 from thriftybuilder.build_configurations import BuildConfigurationType, DockerBuildConfiguration
 from thriftybuilder.storage import ChecksumStorage
 

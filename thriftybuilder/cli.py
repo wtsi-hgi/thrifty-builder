@@ -7,7 +7,7 @@ from typing import List, NamedTuple, Dict, Optional
 from thriftybuilder._logging import create_logger
 from thriftybuilder.builders import DockerBuilder
 from thriftybuilder.configuration import read_configuration
-from thriftybuilder.exceptions import ThriftyBuilderBaseError
+from thriftybuilder.common import ThriftyBuilderBaseError
 from thriftybuilder.meta import DESCRIPTION, VERSION, PACKAGE_NAME
 from thriftybuilder.storage import MemoryChecksumStorage
 from thriftybuilder.uploader import DockerUploader
@@ -48,7 +48,6 @@ def _create_parser() -> ArgumentParser:
     Creates argument parser for the CLI.
     :return: the argument parser
     """
-    # TODO: Complete helps
     parser = ArgumentParser(description=f"{DESCRIPTION} (v{VERSION})")
     parser.add_argument(f"-{VERBOSE_SHORT_PARAMETER}", action="count", default=0,
                         help="increase the level of log verbosity (add multiple increase further)")
@@ -59,7 +58,7 @@ def _create_parser() -> ArgumentParser:
     return parser
 
 
-# FIXME: Stole this from `consul-lock`...
+# XXX: This has been stolen from `consul-lock` - code duplication++
 def _get_verbosity(parsed_arguments: Dict) -> int:
     """
     Gets the verbosity level from the parsed arguments.

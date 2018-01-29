@@ -1,8 +1,6 @@
 from abc import ABCMeta
 from typing import Generic, Iterable
 
-import os
-
 from thriftybuilder.build_configurations import BuildConfigurationType
 from thriftybuilder.containers import BuildConfigurationContainer
 
@@ -16,3 +14,15 @@ class BuildConfigurationManager(Generic[BuildConfigurationType], metaclass=ABCMe
     def __init__(self, managed_build_configurations: Iterable[BuildConfigurationType]=None):
         initial_configurations = managed_build_configurations if managed_build_configurations is not None else ()
         self.managed_build_configurations = BuildConfigurationContainer[BuildConfigurationType](initial_configurations)
+
+
+class ThriftyBuilderBaseError(Exception, metaclass=ABCMeta):
+    """
+    Base exception for package.
+    """
+
+
+class MissingOptionalDependencyError(ThriftyBuilderBaseError):
+    """
+    Exception raised if option dependency is required but not installed.
+    """

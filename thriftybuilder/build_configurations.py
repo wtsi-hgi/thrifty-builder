@@ -7,13 +7,19 @@ from typing import Iterable, Optional, List, Set, TypeVar
 
 from zgitignore import ZgitIgnore
 
-from thriftybuilder.exceptions import InvalidBuildConfigurationError
+from thriftybuilder.common import ThriftyBuilderBaseError
 
 DOCKER_IGNORE_FILE = ".dockerignore"
 _FROM_DOCKER_COMMAND = "from"
 _ADD_DOCKER_COMMAND = "add"
 _RUN_DOCKER_COMMAND = "run"
 _COPY_DOCKER_COMMAND = "copy"
+
+
+class InvalidBuildConfigurationError(ThriftyBuilderBaseError):
+    """
+    Exception raised if a build configuration is invalid.
+    """
 
 
 class BuildConfiguration(metaclass=ABCMeta):

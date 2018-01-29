@@ -6,7 +6,7 @@ from docker import APIClient
 
 from thriftybuilder._logging import create_logger
 from thriftybuilder.checksums import DockerChecksumCalculator, ChecksumCalculator
-from thriftybuilder.common import BuildConfigurationManager
+from thriftybuilder.common import BuildConfigurationManager, ThriftyBuilderBaseError
 from thriftybuilder.build_configurations import DockerBuildConfiguration, BuildConfigurationType
 from thriftybuilder.storage import ChecksumStorage, MemoryChecksumStorage
 
@@ -15,19 +15,19 @@ BuildResultType = TypeVar("BuildResultType")
 logger = create_logger(__name__)
 
 
-class BuildError(Exception):
+class ThriftyBuilderBuildError(ThriftyBuilderBaseError):
     """
     Base class for errors raised during build.
     """
 
 
-class CircularDependencyBuildError(BuildError):
+class CircularDependencyBuildError(ThriftyBuilderBuildError):
     """
     Error raised when circular dependency detected.
     """
 
 
-class UnmanagedBuildError(BuildError):
+class UnmanagedBuildError(ThriftyBuilderBuildError):
     """
     Error raised when illegally trying to use an un-managed build.
     """
@@ -171,7 +171,6 @@ class DockerBuilder(Builder[DockerBuildConfiguration, str]):
         logger.info(f"Building Docker image: {build_configuration.identifier}")
         logger.debug(f"{build_configuration.identifier} to be built using dockerfile "
                      f"\"{build_configuration.dockerfile_location}\" in context \"{build_configuration.context}\"")
-        # TODO: Support setting `squash`: https://docker-py.readthedocs.io/en/stable/images.html
         log_generator = self._docker_client.build(path=build_configuration.context, tag=build_configuration.identifier,
                                                   dockerfile=build_configuration.dockerfile_location, decode=True)
 
