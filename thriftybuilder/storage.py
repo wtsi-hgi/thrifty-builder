@@ -2,11 +2,9 @@ import json
 import os
 from abc import ABCMeta, abstractmethod
 from copy import copy
-
 from typing import Optional, Dict, Mapping, Type
 from urllib.parse import urlparse
 
-from consullock.configuration import get_consul_configuration_from_environment
 from consullock.managers import ConsulLockManager
 
 from thriftybuilder.exceptions import MissingOptionalDependencyError
@@ -124,8 +122,9 @@ class ConsulChecksumStorage(ChecksumStorage):
     @staticmethod
     def _load_consul_class() -> Type:
         """
-        TODO
-        :return:
+        Loads the Consul class at run time (optional requirement).
+        :return: the Consul class
+        :raises MissingOptionalDependencyError: if a required dependency is not installed
         """
         try:
             from consul import Consul
@@ -157,7 +156,7 @@ class ConsulChecksumStorage(ChecksumStorage):
             parsed_url = urlparse(url)
             consul_client_kwargs["host"] = parsed_url.hostname
             consul_client_kwargs["port"] = parsed_url.port
-            consul_client_kwargs["scheme"] = parsed_url.scheme if len(parsed_url.scheme) > 0 else None
+            consul_client_kwargs["scheme"] = parsed_url.scheme if len(parsed_url.scheme) > 0 else "http"
         self._consul_client = consul_client if consul_client is not None else Consul(**consul_client_kwargs)
 
         if token is None:
