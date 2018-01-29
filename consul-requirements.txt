@@ -1,2 +1,2 @@
 python-consul>=0.7.2
-consullock>=4.1.0
+consullock>=4.2.0
