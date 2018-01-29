@@ -6,9 +6,9 @@ from typing import List, NamedTuple, Dict, Optional
 
 from thriftybuilder._logging import create_logger
 from thriftybuilder.builders import DockerBuilder
-from thriftybuilder.configuration import read_configuration
 from thriftybuilder.common import ThriftyBuilderBaseError
-from thriftybuilder.meta import DESCRIPTION, VERSION, PACKAGE_NAME
+from thriftybuilder.configuration import read_configuration
+from thriftybuilder.meta import DESCRIPTION, VERSION, PACKAGE_NAME, EXECUTABLE_NAME
 from thriftybuilder.storage import MemoryChecksumStorage
 from thriftybuilder.uploader import DockerUploader
 
@@ -48,7 +48,7 @@ def _create_parser() -> ArgumentParser:
     Creates argument parser for the CLI.
     :return: the argument parser
     """
-    parser = ArgumentParser(description=f"{DESCRIPTION} (v{VERSION})")
+    parser = ArgumentParser(prog=EXECUTABLE_NAME, description=f"{DESCRIPTION} (v{VERSION})")
     parser.add_argument(f"-{VERBOSE_SHORT_PARAMETER}", action="count", default=0,
                         help="increase the level of log verbosity (add multiple increase further)")
     parser.add_argument(f"--{OUTPUT_BUILT_ONLY_LONG_PARAMETER}", action="store_true", default=DEFAULT_BUILT_ONLY,
