@@ -4,9 +4,10 @@ from typing import Generic, Callable
 
 from checksumdir import dirhash
 
-from thriftybuilder.common import DEFAULT_ENCODING, BuildConfigurationManager
+from thriftybuilder.common import DEFAULT_ENCODING
 from thriftybuilder.hashers import Hasher, Md5Hasher
-from thriftybuilder.build_configurations import DockerBuildConfiguration, BuildConfigurationType
+from thriftybuilder.build_configurations import DockerBuildConfiguration, BuildConfigurationType, \
+    BuildConfigurationManager
 
 
 class ChecksumCalculator(Generic[BuildConfigurationType], metaclass=ABCMeta):

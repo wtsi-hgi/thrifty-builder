@@ -3,7 +3,7 @@ import os
 from abc import ABCMeta, abstractmethod
 from glob import glob
 from os import walk
-from typing import Iterable, Optional, List, Set, TypeVar
+from typing import Iterable, Optional, List, Set, TypeVar, Generic
 
 from zgitignore import ZgitIgnore
 
@@ -52,6 +52,9 @@ class BuildConfiguration(metaclass=ABCMeta):
 
     def __str__(self) -> str:
         return self.identifier
+
+
+BuildConfigurationType = TypeVar("BuildConfigurationType", bound=BuildConfiguration)
 
 
 class DockerBuildConfiguration(BuildConfiguration):
@@ -186,4 +189,11 @@ class DockerBuildConfiguration(BuildConfiguration):
         return ignored_files
 
 
-BuildConfigurationType = TypeVar("BuildConfigurationType", bound=BuildConfiguration)
+class BuildConfigurationManager(Generic[BuildConfigurationType], metaclass=ABCMeta):
+    """
+    A class that manages a collection of build configurations.
+    """
+    def __init__(self, managed_build_configurations: Iterable[BuildConfigurationType]=None):
+        from thriftybuilder.containers import BuildConfigurationContainer
+        initial_configurations = managed_build_configurations if managed_build_configurations is not None else ()
+        self.managed_build_configurations = BuildConfigurationContainer[BuildConfigurationType](initial_configurations)
