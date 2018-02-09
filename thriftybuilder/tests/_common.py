@@ -1,17 +1,17 @@
 import dockerfile
 import os
-import shutil
 import unittest
 from abc import ABCMeta
 from tempfile import mkdtemp, NamedTemporaryFile
 from typing import List, Dict, Optional, Tuple, Iterable
 
 import docker
+import shutil
 import yaml
 from consul import Consul
 from docker.errors import ImageNotFound, NullResource, NotFound
-from useintest.predefined.consul import ConsulServiceController, ConsulDockerisedService
-from useintest.services._builders import DockerisedServiceControllerTypeBuilder
+from useintest.modules.consul import ConsulServiceController, ConsulDockerisedService
+from useintest.services.builders import DockerisedServiceControllerTypeBuilder
 from useintest.services.models import DockerisedService
 
 from thriftybuilder.build_configurations import DockerBuildConfiguration
