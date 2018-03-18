@@ -19,6 +19,7 @@ image, even if the context and Dockerfile are the same).
 
 ## Installation
 Prerequisites
+- Docker (Server API version >= 1.21)
 - Python 3.6+
 
 The tool can be installed from PyPi:
@@ -30,6 +31,7 @@ Bleeding edge versions can be installed directly from GitHub:
 ```bash
 pip install git+https://github.com/wtsi-hgi/thrifty-builder.git@master#egg=thriftybuilder
 ```
+
 
 ## Usage
 ### Configuration
@@ -112,6 +114,21 @@ CLI:
 thrifty configuration.yml
 {"wtsi-hgi/image-1": "b2db4c1ae978201407c69573ba89a9b8", "wtsi-hgi/image-2": "f9a4d7cc9f7133756b36973cc2d888de"}
 
+```
+
+
+## Development
+### Setup
+Install the tool's dependencies and the dependencies needed for testing:
+```bash
+pip install -r test_requirements.txt
+pip install -U -r requirements.txt
+```
+
+### Testing
+In the project directory, run:
+```bash
+PYTHONPATH=. python -m unittest discover -v -s thriftybuilder/tests
 ```
 
 
