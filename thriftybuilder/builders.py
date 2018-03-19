@@ -5,10 +5,10 @@ from typing import Generic, TypeVar, Iterable, Set, Dict
 from docker import APIClient
 
 from thriftybuilder._logging import create_logger
-from thriftybuilder.checksums import DockerChecksumCalculator, ChecksumCalculator
-from thriftybuilder.common import ThriftyBuilderBaseError
 from thriftybuilder.build_configurations import DockerBuildConfiguration, BuildConfigurationType, \
     BuildConfigurationManager
+from thriftybuilder.checksums import DockerChecksumCalculator, ChecksumCalculator
+from thriftybuilder.common import ThriftyBuilderBaseError
 from thriftybuilder.storage import ChecksumStorage, MemoryChecksumStorage
 
 BuildResultType = TypeVar("BuildResultType")

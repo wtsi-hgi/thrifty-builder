@@ -4,22 +4,16 @@ python:
   - 3.6
 
 services:
-- docker
+  - docker
 
 before_install:
   - pip install codecov coverage
-  - pip install -r test_requirements.txt
 
 install:
-  - pip install -U -r requirements.txt
-  - pip install -U -r consul-requirements.txt
+  -
 
 script:
-  - PYTHONPATH=. coverage run -m unittest discover -v -s thriftybuilder/tests
-  - coverage run setup.py -q install
-  - PYTHONPATH=. coverage run thriftybuilder/cli.py -h
-  - coverage combine -a
-  - coverage report
+  - ./run-tests-in-docker.sh
 
 after_success:
   - codecov
