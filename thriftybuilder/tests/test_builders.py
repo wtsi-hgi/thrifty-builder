@@ -1,7 +1,9 @@
 import itertools
 import unittest
+from tempfile import NamedTemporaryFile
 
-from thriftybuilder.builders import DockerBuilder, CircularDependencyBuildError, UnmanagedBuildError
+from thriftybuilder.builders import DockerBuilder, CircularDependencyBuildError, UnmanagedBuildError, \
+    InvalidDockerfileBuildError
 from thriftybuilder.tests._common import TestWithDockerBuildConfiguration
 from thriftybuilder.tests._examples import EXAMPLE_IMAGE_NAME_2, EXAMPLE_IMAGE_NAME_1
 
@@ -13,6 +15,15 @@ class TestDockerBuilder(TestWithDockerBuildConfiguration):
     def setUp(self):
         super().setUp()
         self.docker_builder = DockerBuilder()
+
+    def test_build_when_dockerfile_is_invalid(self):
+        _, configuration = self.create_docker_setup()
+        with open(configuration.dockerfile_location, "w") as file:
+            file.write("invalid")
+        self.docker_builder.managed_build_configurations.add(configuration)
+        self.assertRaises(InvalidDockerfileBuildError, self.docker_builder.build, configuration)
+
+
 
     def test_build_when_from_image_is_not_managed(self):
         _, configuration = self.create_docker_setup()

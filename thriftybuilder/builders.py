@@ -3,6 +3,7 @@ from collections import OrderedDict
 from typing import Generic, TypeVar, Iterable, Set, Dict
 
 from docker import APIClient
+from docker.errors import APIError
 
 from thriftybuilder._logging import create_logger
 from thriftybuilder.build_configurations import DockerBuildConfiguration, BuildConfigurationType, \
@@ -32,6 +33,16 @@ class UnmanagedBuildError(ThriftyBuilderBuildError):
     """
     Error raised when illegally trying to use an un-managed build.
     """
+
+
+class InvalidDockerfileBuildError(ThriftyBuilderBuildError):
+    """
+    Error raised when Dockerfile is invalid.
+    """
+    def __init__(self, dockerfile_location: str, contents: str):
+        super().__init__(f"Invalid Dockerfile: {dockerfile_location}")
+        self.dockerfile_location = dockerfile_location
+        self.contents = contents
 
 
 class Builder(Generic[BuildConfigurationType, BuildResultType], BuildConfigurationManager[BuildConfigurationType],
@@ -175,9 +186,16 @@ class DockerBuilder(Builder[DockerBuildConfiguration, str]):
         log_generator = self._docker_client.build(path=build_configuration.context, tag=build_configuration.identifier,
                                                   dockerfile=build_configuration.dockerfile_location, decode=True)
 
-        for log in log_generator:
-            details = log.get("stream", "").strip()
-            if len(details) > 0:
-                logger.debug(details)
+        try:
+            for log in log_generator:
+                details = log.get("stream", "").strip()
+                if len(details) > 0:
+                    logger.debug(details)
+        except APIError as e:
+            if e.status_code == 400 and "parse error" in e.explanation:
+                dockerfile_location = build_configuration.dockerfile_location
+                with open(dockerfile_location, "r") as file:
+                    raise InvalidDockerfileBuildError(dockerfile_location, file.read())
+            raise e
 
         return build_configuration.identifier
