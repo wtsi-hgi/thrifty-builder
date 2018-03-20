@@ -1,10 +1,9 @@
 import itertools
 import unittest
-from tempfile import NamedTemporaryFile
 
 from thriftybuilder.builders import DockerBuilder, CircularDependencyBuildError, UnmanagedBuildError, \
-    InvalidDockerfileBuildError
-from thriftybuilder.tests._common import TestWithDockerBuildConfiguration
+    InvalidDockerfileBuildError, BuildStepError
+from thriftybuilder.tests._common import TestWithDockerBuildConfiguration, RUN_DOCKER_COMMAND
 from thriftybuilder.tests._examples import EXAMPLE_IMAGE_NAME_2, EXAMPLE_IMAGE_NAME_1
 
 
@@ -17,13 +16,14 @@ class TestDockerBuilder(TestWithDockerBuildConfiguration):
         self.docker_builder = DockerBuilder()
 
     def test_build_when_dockerfile_is_invalid(self):
-        _, configuration = self.create_docker_setup()
-        with open(configuration.dockerfile_location, "w") as file:
-            file.write("invalid")
+        _, configuration = self.create_docker_setup(commands=["invalid"])
         self.docker_builder.managed_build_configurations.add(configuration)
         self.assertRaises(InvalidDockerfileBuildError, self.docker_builder.build, configuration)
 
-
+    def test_build_when_build_fails(self):
+        _, configuration = self.create_docker_setup(commands=[f"{RUN_DOCKER_COMMAND} exit 1"])
+        self.docker_builder.managed_build_configurations.add(configuration)
+        self.assertRaises(BuildStepError, self.docker_builder.build, configuration)
 
     def test_build_when_from_image_is_not_managed(self):
         _, configuration = self.create_docker_setup()
@@ -59,6 +59,12 @@ class TestDockerBuilder(TestWithDockerBuildConfiguration):
     def test_build_all_when_none_managed(self):
         built = self.docker_builder.build_all()
         self.assertEqual(0, len(built))
+
+    def test_build_all_when_one_fails(self):
+        configurations = self.create_dependent_docker_build_configurations(4)
+        configurations += [self.create_docker_setup(commands=[f"{RUN_DOCKER_COMMAND} exit 1"])[1]]
+        self.docker_builder.managed_build_configurations.add_all(configurations)
+        self.assertRaises(BuildStepError, self.docker_builder.build_all)
 
     def test_build_all_when_managed(self):
         configurations = self.create_dependent_docker_build_configurations(4)
