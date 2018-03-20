@@ -121,8 +121,9 @@ thrifty configuration.yml
 ### Setup
 Install the tool's dependencies and the dependencies needed for testing:
 ```bash
-pip install -r test_requirements.txt
+pip install -U -r test_requirements.txt
 pip install -U -r requirements.txt
+pip install -U -r consul-requirements.txt
 ```
 
 ### Testing
@@ -130,6 +131,11 @@ In the project directory, run:
 ```bash
 PYTHONPATH=. python -m unittest discover -v -s thriftybuilder/tests
 ```
+
+The CI runs the tests and generates coverage with `run-tests.sh`. This script runs the tests as described above in, 
+addition to testing that the tool can be installed without errors.
+
+To run the tests entirely in docker, use `run-tests-in-docker.sh` (experimental).
 
 
 ## Alternatives
