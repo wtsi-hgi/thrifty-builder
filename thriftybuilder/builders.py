@@ -3,6 +3,7 @@ from collections import OrderedDict
 from typing import Generic, TypeVar, Iterable, Set, Dict
 
 from docker import APIClient
+from docker.errors import APIError
 
 from thriftybuilder._logging import create_logger
 from thriftybuilder.build_configurations import DockerBuildConfiguration, BuildConfigurationType, \
@@ -16,22 +17,52 @@ BuildResultType = TypeVar("BuildResultType")
 logger = create_logger(__name__)
 
 
-class ThriftyBuilderBuildError(ThriftyBuilderBaseError):
+class ThriftyBuilderError(ThriftyBuilderBaseError):
     """
     Base class for errors raised during build.
     """
 
 
-class CircularDependencyBuildError(ThriftyBuilderBuildError):
+class CircularDependencyBuildError(ThriftyBuilderError):
     """
     Error raised when circular dependency detected.
     """
 
 
-class UnmanagedBuildError(ThriftyBuilderBuildError):
+class UnmanagedBuildError(ThriftyBuilderError):
     """
     Error raised when illegally trying to use an un-managed build.
     """
+
+
+class BuildFailedError(ThriftyBuilderError):
+    """
+    Error raised if error occurs during build.
+    """
+    def __init__(self, image_name: str, message: str=None):
+        super().__init__(message)
+        self.image_name = image_name
+
+
+class InvalidDockerfileBuildError(BuildFailedError):
+    """
+    Error raised when Dockerfile is invalid.
+    """
+    def __init__(self, image_name: str, dockerfile_location: str, contents: str):
+        super().__init__(image_name, message=f"Invalid Dockerfile for {image_name}: {dockerfile_location}")
+        self.dockerfile_location = dockerfile_location
+        self.contents = contents
+
+
+class BuildStepError(BuildFailedError):
+    """
+    Error raised if error occurs during a build step.
+    """
+    def __init__(self, image_name: str, error_message: str, exit_code: int):
+        super().__init__(
+            image_name, message=f"Build for {image_name} failed with exit code {exit_code}: {error_message}")
+        self.error_message = error_message
+        self.exit_code = exit_code
 
 
 class Builder(Generic[BuildConfigurationType, BuildResultType], BuildConfigurationManager[BuildConfigurationType],
@@ -45,6 +76,7 @@ class Builder(Generic[BuildConfigurationType, BuildResultType], BuildConfigurati
         Builds the given build configuration, given that its build dependencies have already been built.
         :param build_configuration: the configuration to build
         :return: the result of building the given configuration
+        :raises BuildFailedError: raised if the build fails
         """
 
     def __init__(self, managed_build_configurations: Iterable[BuildConfigurationType]=None,
@@ -72,6 +104,7 @@ class Builder(Generic[BuildConfigurationType, BuildResultType], BuildConfigurati
         :return: mapping between built configurations and their associated build result
         :raises UnmanagedBuildError: when requested to potentially build an unmanaged build
         :raises CircularDependencyBuildError: when circular dependency in FROM image
+        :raises BuildFailedError: raised if the build fails
         """
         if build_configuration not in self.managed_build_configurations:
             raise UnmanagedBuildError(f"Build configuration {build_configuration} cannot be built as it is not in the "
@@ -175,9 +208,21 @@ class DockerBuilder(Builder[DockerBuildConfiguration, str]):
         log_generator = self._docker_client.build(path=build_configuration.context, tag=build_configuration.identifier,
                                                   dockerfile=build_configuration.dockerfile_location, decode=True)
 
-        for log in log_generator:
-            details = log.get("stream", "").strip()
-            if len(details) > 0:
-                logger.debug(details)
+        log = {}
+        try:
+            for log in log_generator:
+                details = log.get("stream", "").strip()
+                if len(details) > 0:
+                    logger.debug(details)
+        except APIError as e:
+            if e.status_code == 400 and "parse error" in e.explanation:
+                dockerfile_location = build_configuration.dockerfile_location
+                with open(dockerfile_location, "r") as file:
+                    raise InvalidDockerfileBuildError(build_configuration.name, dockerfile_location, file.read())
+            raise e
+
+        if "error" in log:
+            error_details = log["errorDetail"]
+            raise BuildStepError(build_configuration.name, error_details["message"], error_details["code"])
 
         return build_configuration.identifier

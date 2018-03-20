@@ -102,6 +102,9 @@ class TestWithDockerBuildConfiguration(unittest.TestCase, metaclass=ABCMeta):
                 pass
 
     def create_docker_setup(self, *args, **kwargs) -> Tuple[str, DockerBuildConfiguration]:
+        """
+        See `create_docker_setup`.
+        """
         setup_location, build_configuration = create_docker_setup(*args, **kwargs)
         self._setup_locations.append(setup_location)
         self.images_to_delete.append(build_configuration.identifier)
