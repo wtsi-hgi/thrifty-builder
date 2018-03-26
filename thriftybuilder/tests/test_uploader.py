@@ -82,6 +82,18 @@ class TestDockerUploader(_TestBuildArtifactUploader[DockerBuildConfiguration], T
     def is_uploaded(self, configuration: DockerBuildConfiguration) -> bool:
         return TestWithDockerRegistry.is_uploaded(self, configuration)
 
+    def test_upload_tagged(self):
+        _, configuration = self.create_docker_setup(image_name="example:version")
+        build_result = DockerBuilder((configuration,), checksum_calculator=self.checksum_calculator) \
+            .build(configuration)
+
+        assert not self.is_uploaded(configuration)
+        self.uploader.upload(configuration)
+        checksum = self.checksum_calculator.calculate_checksum(configuration)
+        self.assertEqual(checksum, self.checksum_storage.get_checksum(configuration.identifier))
+        self.assertTrue(self.is_uploaded(configuration))
+
+
 
 del _TestBuildArtifactUploader
 
