@@ -79,7 +79,8 @@ class DockerUploader(BuildArtifactUploader[DockerBuildConfiguration]):
         repository = f"{self.docker_registry.url}/{build_configuration.name}"
         logger.info(f"Uploading {build_configuration.name} (tag={build_configuration.tag}) to "
                     f"{self.docker_registry.url}")
-        self._docker_client.api.tag(build_configuration.name, repository, build_configuration.tag)
+        self._docker_client.api.tag(f"{build_configuration.name}:{build_configuration.tag}", repository,
+                                    build_configuration.tag)
 
         auth_config = None
         if self.docker_registry.username is not None and self.docker_registry.password is not None:

@@ -30,7 +30,7 @@ from thriftybuilder.tests._examples import name_generator, EXAMPLE_FROM_IMAGE_NA
 
 
 def create_docker_setup(
-        commands: Iterable[str]=None, context_files: Dict[str, Optional[str]]=None,
+        *, commands: Iterable[str]=None, context_files: Dict[str, Optional[str]]=None,
         image_name: str=_RANDOM_NAME, from_image_name: str=EXAMPLE_FROM_IMAGE_NAME) \
         -> Tuple[str, DockerBuildConfiguration]:
     """
@@ -101,11 +101,11 @@ class TestWithDockerBuildConfiguration(unittest.TestCase, metaclass=ABCMeta):
             except (ImageNotFound, NullResource):
                 pass
 
-    def create_docker_setup(self, *args, **kwargs) -> Tuple[str, DockerBuildConfiguration]:
+    def create_docker_setup(self, **kwargs) -> Tuple[str, DockerBuildConfiguration]:
         """
         See `create_docker_setup`.
         """
-        setup_location, build_configuration = create_docker_setup(*args, **kwargs)
+        setup_location, build_configuration = create_docker_setup(**kwargs)
         self._setup_locations.append(setup_location)
         self.images_to_delete.append(build_configuration.identifier)
         return setup_location, build_configuration

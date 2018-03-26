@@ -1,6 +1,6 @@
 import unittest
 from abc import ABCMeta, abstractmethod
-from typing import Generic
+from typing import Generic, Dict
 
 from thriftybuilder.builders import DockerBuilder
 from thriftybuilder.checksums import ChecksumCalculator, DockerChecksumCalculator
@@ -8,6 +8,7 @@ from thriftybuilder.build_configurations import BuildConfigurationType, DockerBu
 from thriftybuilder.configuration import DockerRegistry
 from thriftybuilder.storage import MemoryChecksumStorage
 from thriftybuilder.tests._common import TestWithDockerBuildConfiguration, TestWithDockerRegistry
+from thriftybuilder.tests._examples import name_generator
 from thriftybuilder.uploader import DockerUploader, BuildArtifactUploader
 
 
@@ -32,9 +33,10 @@ class _TestBuildArtifactUploader(Generic[BuildConfigurationType], unittest.TestC
         """
 
     @abstractmethod
-    def create_built_configuration(self) -> BuildConfigurationType:
+    def create_built_configuration(self, configuration_args: Dict=None) -> BuildConfigurationType:
         """
         Creates a built configuration to upload.
+        :param configuration_args: arguments to use when creating the build configuration
         :return: configuration that has had build artifacts.
         """
 
@@ -72,8 +74,10 @@ class TestDockerUploader(_TestBuildArtifactUploader[DockerBuildConfiguration], T
     def create_uploader(self) -> DockerUploader:
         return DockerUploader(self.checksum_storage, DockerRegistry(self.registry_location), self.checksum_calculator)
 
-    def create_built_configuration(self) -> DockerBuildConfiguration:
-        _, configuration = self.create_docker_setup()
+    def create_built_configuration(self, configuration_args: Dict=None) -> DockerBuildConfiguration:
+        if configuration_args is None:
+            configuration_args = {}
+        _, configuration = self.create_docker_setup(**configuration_args)
         build_result = DockerBuilder((configuration,), checksum_calculator=self.checksum_calculator) \
             .build(configuration)
         assert len(build_result) == 1
@@ -81,6 +85,15 @@ class TestDockerUploader(_TestBuildArtifactUploader[DockerBuildConfiguration], T
 
     def is_uploaded(self, configuration: DockerBuildConfiguration) -> bool:
         return TestWithDockerRegistry.is_uploaded(self, configuration)
+
+    def test_upload_tagged(self):
+        configuration = self.create_built_configuration(dict(image_name=f"{name_generator()}:version"))
+        assert not self.is_uploaded(configuration)
+        self.uploader.upload(configuration)
+        checksum = self.checksum_calculator.calculate_checksum(configuration)
+        self.assertEqual(checksum, self.checksum_storage.get_checksum(configuration.identifier))
+        self.assertTrue(self.is_uploaded(configuration))
+
 
 
 del _TestBuildArtifactUploader
