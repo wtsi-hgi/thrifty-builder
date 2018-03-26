@@ -28,14 +28,6 @@ class BuildConfiguration(metaclass=ABCMeta):
     """
     @property
     @abstractmethod
-    def identifier(self) -> str:
-        """
-        Unique identifier of this configuration.
-        :return: the identifier
-        """
-
-    @property
-    @abstractmethod
     def requires(self) -> List[str]:
         """
         Other build configurations that this configuration is dependent on.
@@ -46,9 +38,24 @@ class BuildConfiguration(metaclass=ABCMeta):
     @abstractmethod
     def used_files(self) -> List[str]:
         """
-        The files that this configuration to build an itme.
+        The files that this configuration uses to build an item.
         :return: list of used files
         """
+
+    @property
+    def identifier(self) -> str:
+        """
+        Unique identifier of this configuration.
+        :return: the identifier
+        """
+        return self._identifier
+
+    def __init__(self, identifier: str):
+        """
+        Constructor.
+        :param identifier: build configuration identifier
+        """
+        self._identifier = identifier
 
     def __str__(self) -> str:
         return self.identifier
@@ -62,20 +69,6 @@ class DockerBuildConfiguration(BuildConfiguration):
     A configuration that describes how a Docker image is built.
     """
     _NAME_TAG_SEPARATOR = ":"
-
-    @property
-    def identifier(self) -> str:
-        return self._identifier
-
-    @property
-    def name(self) -> str:
-        return self._identifier.split(DockerBuildConfiguration._NAME_TAG_SEPARATOR)[0]
-
-    @property
-    def tag(self) -> Optional[str]:
-        if DockerBuildConfiguration._NAME_TAG_SEPARATOR not in self.identifier:
-            return None
-        return self._identifier.split(DockerBuildConfiguration._NAME_TAG_SEPARATOR)[1]
 
     @property
     def requires(self) -> List[str]:
@@ -109,6 +102,16 @@ class DockerBuildConfiguration(BuildConfiguration):
                     source_files.add(candidate_file)
 
         return set(source_files - self.get_ignored_files())
+
+    @property
+    def name(self) -> str:
+        return self._identifier.split(DockerBuildConfiguration._NAME_TAG_SEPARATOR)[0]
+
+    @property
+    def tag(self) -> Optional[str]:
+        if DockerBuildConfiguration._NAME_TAG_SEPARATOR not in self.identifier:
+            return None
+        return self._identifier.split(DockerBuildConfiguration._NAME_TAG_SEPARATOR)[1]
 
     @property
     def from_image(self) -> str:
@@ -152,11 +155,12 @@ class DockerBuildConfiguration(BuildConfiguration):
         if not isinstance(image_name, str):
             raise ValueError(f"`image_name` must be a string - {type(image_name)} given")
 
+        super().__init__(identifier=image_name)
+
         self._dockerfile_location = None
         self._context = None
         self._commands = None
 
-        self._identifier = image_name
         self.dockerfile_location = dockerfile_location
         self.context = context if context is not None else os.path.dirname(self.dockerfile_location)
 
@@ -194,6 +198,36 @@ class DockerBuildConfiguration(BuildConfiguration):
                 ignored_files.add(context_file)
 
         return ignored_files
+
+
+class ScriptBasedBuildConfiguration(BuildConfiguration):
+    """
+    Script based build configuration.
+    """
+    @property
+    def requires(self) -> List[str]:
+        return list(self._prerequisite_configurations)
+
+    @property
+    def used_files(self) -> Iterable[str]:
+        return self._used_files
+
+    def __init__(self, script_location: str, prerequisite_configurations: Iterable[str]=(),
+                 used_files: Iterable[str]=(), identifier: str=None):
+        """
+        Constructor.
+        :param script_location: location of the script
+        :param prerequisite_configurations: identifiers of other configurations that must be built first
+        :param used_files: list of files that the script uses
+        :param identifier: identifier for the script. If `None` the name will be the basename of the location
+        """
+        if identifier is None:
+            identifier = os.path.basename(script_location)
+        super().__init__(identifier=identifier)
+
+        self._script_location = script_location
+        self._prerequisite_configurations = prerequisite_configurations
+        self._used_files = used_files
 
 
 class BuildConfigurationManager(Generic[BuildConfigurationType], metaclass=ABCMeta):

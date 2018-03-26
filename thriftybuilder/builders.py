@@ -1,13 +1,13 @@
 from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
-from typing import Generic, TypeVar, Iterable, Set, Dict, Callable
+from typing import Generic, TypeVar, Iterable, Set, Dict, List, Callable
 
 from docker import APIClient
 from docker.errors import APIError
 
 from thriftybuilder._logging import create_logger
 from thriftybuilder.build_configurations import DockerBuildConfiguration, BuildConfigurationType, \
-    BuildConfigurationManager
+    BuildConfigurationManager, ScriptBasedBuildConfiguration
 from thriftybuilder.checksums import DockerChecksumCalculator, ChecksumCalculator
 from thriftybuilder.common import ThriftyBuilderBaseError
 from thriftybuilder.storage import ChecksumStorage, MemoryChecksumStorage, ChecksumRetriever, \
@@ -231,7 +231,10 @@ class DockerBuilder(Builder[DockerBuildConfiguration, str, DockerChecksumCalcula
         self._docker_client = APIClient()
 
     def __del__(self):
-        self._docker_client.close()
+        try:
+            self._docker_client.close()
+        except NameError:
+            pass
 
     def _build(self, build_configuration: DockerBuildConfiguration) -> str:
         logger.info(f"Building Docker image: {build_configuration.identifier}")
@@ -258,3 +261,11 @@ class DockerBuilder(Builder[DockerBuildConfiguration, str, DockerChecksumCalcula
             raise BuildStepError(build_configuration.name, error_details["message"], error_details["code"])
 
         return build_configuration.identifier
+
+
+class ScriptBasedBuilder(Builder[ScriptBasedBuildConfiguration, List[str]]):
+    """
+    TODO
+    """
+    def _build(self, build_configuration: ScriptBasedBuildConfiguration) -> str:
+        logger.info(f"Building using script: {build_configuration.identifier}")
