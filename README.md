@@ -93,7 +93,7 @@ docker:
     - name: wtsi-hgi/image-1
       dockerfile: /images/image-1/Dockerfile
       context: /images
-    - name: wtsi-hgi/image-2
+    - name: wtsi-hgi/image-2:version-1
       dockerfile: /images/image-2/Dockerfile
       # Context assumed to be /images/image-2 
   registries:
