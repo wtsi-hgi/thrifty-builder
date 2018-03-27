@@ -48,6 +48,17 @@ class _TestBuildArtifactUploader(Generic[BuildConfigurationType], unittest.TestC
         :return: whether the configuration has been uploaded
         """
 
+    def assertUploaded(self, configuration: BuildConfigurationType):
+        """
+        Asserts that the build artifacts associated to the given configuration have been uploaded and checksum data has
+        been stored.
+        :param configuration: the build configuration that has been uploaded
+        :raises AssertionError: if build artifacts have not been uploaded
+        """
+        checksum = self.checksum_calculator.calculate_checksum(configuration)
+        self.assertEqual(checksum, self.checksum_storage.get_checksum(configuration.identifier))
+        self.assertTrue(self.is_uploaded(configuration))
+
     def setUp(self):
         super().setUp()
         self.checksum_storage = MemoryChecksumStorage()
@@ -57,9 +68,7 @@ class _TestBuildArtifactUploader(Generic[BuildConfigurationType], unittest.TestC
     def test_upload(self):
         assert not self.is_uploaded(self.configuration)
         self.uploader.upload(self.configuration)
-        checksum = self.checksum_calculator.calculate_checksum(self.configuration)
-        self.assertEqual(checksum, self.checksum_storage.get_checksum(self.configuration.identifier))
-        self.assertTrue(self.is_uploaded(self.configuration))
+        self.assertUploaded(self.configuration)
 
 
 class TestDockerUploader(_TestBuildArtifactUploader[DockerBuildConfiguration], TestWithDockerBuildConfiguration,
@@ -81,6 +90,7 @@ class TestDockerUploader(_TestBuildArtifactUploader[DockerBuildConfiguration], T
         build_result = DockerBuilder((configuration,), checksum_calculator=self.checksum_calculator) \
             .build(configuration)
         assert len(build_result) == 1
+        assert not self.is_uploaded(configuration)
         return configuration
 
     def is_uploaded(self, configuration: DockerBuildConfiguration) -> bool:
@@ -88,11 +98,14 @@ class TestDockerUploader(_TestBuildArtifactUploader[DockerBuildConfiguration], T
 
     def test_upload_tagged(self):
         configuration = self.create_built_configuration(dict(image_name=f"{name_generator()}:version"))
-        assert not self.is_uploaded(configuration)
         self.uploader.upload(configuration)
-        checksum = self.checksum_calculator.calculate_checksum(configuration)
-        self.assertEqual(checksum, self.checksum_storage.get_checksum(configuration.identifier))
-        self.assertTrue(self.is_uploaded(configuration))
+        self.assertUploaded(configuration)
+
+    def test_upload_not_tagged(self):
+        configuration = self.create_built_configuration(dict(image_name=name_generator()))
+        self.uploader.upload(configuration)
+        self.assertUploaded(configuration)
+
 
 
 

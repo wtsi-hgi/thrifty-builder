@@ -83,8 +83,7 @@ class DockerUploader(BuildArtifactUploader[DockerBuildConfiguration]):
             image = build_configuration.name
         else:
             image = f"{build_configuration.name}:{build_configuration.tag}"
-        self._docker_client.api.tag(image, repository,
-                                    build_configuration.tag)
+        self._docker_client.api.tag(image, repository, build_configuration.tag)
 
         auth_config = None
         if self.docker_registry.username is not None and self.docker_registry.password is not None:
