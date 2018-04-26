@@ -88,6 +88,26 @@ class TestDockerBuilder(TestWithDockerBuildConfiguration):
         build_results = self.docker_builder.build_all()
         self.assertCountEqual(configurations[2:], build_results)
 
+    def test_build_when_from_image_updated(self):
+        configurations = self.create_dependent_docker_build_configurations(2)
+        self.docker_builder.managed_build_configurations.add_all(configurations)
+
+        build_results = self.docker_builder.build_all()
+        assert len(build_results) == 2
+
+        for configuration in build_results.keys():
+            checksum = self.docker_builder.checksum_calculator.calculate_checksum(configuration)
+            self.checksum_storage.set_checksum(configuration.identifier, checksum)
+
+        parent_image = configurations[0]
+
+        with open(parent_image.dockerfile_location, "a") as file:
+            file.write(f"{RUN_DOCKER_COMMAND} echo 1")
+        parent_image.reload()
+
+        build_results = self.docker_builder.build_all()
+        self.assertEqual(2, len(build_results))
+
 
 if __name__ == "__main__":
     unittest.main()
