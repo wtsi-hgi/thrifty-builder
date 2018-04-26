@@ -79,7 +79,7 @@ class DockerBuildConfiguration(BuildConfiguration):
 
     @property
     def requires(self) -> List[str]:
-        for command in self.commands:
+        for command in self._commands:
             if command.cmd == _FROM_DOCKER_COMMAND:
                 return command.value
         raise InvalidBuildConfigurationError(
@@ -91,7 +91,7 @@ class DockerBuildConfiguration(BuildConfiguration):
         Note: does not support adding URLs.
         """
         source_patterns: List[str] = []
-        for command in self.commands:
+        for command in self._commands:
             if command.cmd in [_ADD_DOCKER_COMMAND, _COPY_DOCKER_COMMAND]:
                 assert len(command.value) >= 2
                 source_patterns.extend(command.value[0:-1])
@@ -133,6 +133,7 @@ class DockerBuildConfiguration(BuildConfiguration):
         if not os.path.isabs(location):
             raise ValueError("dockerfile_location must be an absolute path")
         self._dockerfile_location = location
+        self.reload()
 
     @context.setter
     def context(self, context: str):
@@ -153,11 +154,17 @@ class DockerBuildConfiguration(BuildConfiguration):
 
         self._dockerfile_location = None
         self._context = None
+        self._commands = None
 
         self._identifier = image_name
         self.dockerfile_location = dockerfile_location
         self.context = context if context is not None else os.path.dirname(self.dockerfile_location)
-        self.commands = dockerfile.parse_file(self.dockerfile_location)
+
+    def reload(self):
+        """
+        Re-parse Dockerfile.
+        """
+        self._commands = dockerfile.parse_file(self.dockerfile_location)
 
     def get_ignored_files(self) -> Set[str]:
         """
