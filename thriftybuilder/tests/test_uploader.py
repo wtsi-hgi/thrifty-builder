@@ -87,7 +87,7 @@ class TestDockerUploader(_TestBuildArtifactUploader[DockerBuildConfiguration], T
         if configuration_args is None:
             configuration_args = {}
         _, configuration = self.create_docker_setup(**configuration_args)
-        build_result = DockerBuilder((configuration,), checksum_calculator=self.checksum_calculator) \
+        build_result = DockerBuilder((configuration,), checksum_calculator_factory=lambda: self.checksum_calculator) \
             .build(configuration)
         assert len(build_result) == 1
         assert not self.is_uploaded(configuration)

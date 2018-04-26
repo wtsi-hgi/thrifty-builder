@@ -104,7 +104,7 @@ def main(cli_arguments: List[str], stdin_content: Optional[str]=None):
         configuration.checksum_storage.set_all_checksums(json.loads(stdin_content))
 
     docker_builder = DockerBuilder(managed_build_configurations=configuration.docker_build_configurations,
-                                   checksum_storage=configuration.checksum_storage)
+                                   checksum_retriever=configuration.checksum_storage)
     build_results = docker_builder.build_all()
 
     if len(configuration.docker_registries) == 0:
