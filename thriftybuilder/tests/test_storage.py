@@ -3,7 +3,8 @@ import unittest
 from abc import ABCMeta, abstractmethod
 from tempfile import NamedTemporaryFile
 
-from thriftybuilder.storage import ChecksumStorage, MemoryChecksumStorage, DiskChecksumStorage, ConsulChecksumStorage
+from thriftybuilder.storage import ChecksumStorage, MemoryChecksumStorage, DiskChecksumStorage, ConsulChecksumStorage, \
+    DoubleSourceChecksumStorage
 from thriftybuilder.tests._common import TestWithConsulService
 from thriftybuilder.tests._examples import EXAMPLE_1_CONFIGURATION_ID, EXAMPLE_1_CHECKSUM, EXAMPLE_2_CONFIGURATION_ID, \
     EXAMPLE_2_CHECKSUM, EXAMPLE_1_CONSUL_KEY, EXAMPLE_2_CONSUL_KEY
@@ -63,6 +64,38 @@ class TestMemoryChecksumStorage(_TestChecksumStorage):
     """
     def create_storage(self) -> ChecksumStorage:
         return MemoryChecksumStorage()
+
+
+class TestDoubleSourceChecksumStorage(_TestChecksumStorage):
+    """
+    Tests for `DoubleSourceChecksumStorage`.
+    """
+    def setUp(self):
+        self.local_storage = MemoryChecksumStorage()
+        self.remote_storage = MemoryChecksumStorage()
+        super().setUp()
+
+    def create_storage(self) -> ChecksumStorage:
+        return DoubleSourceChecksumStorage(self.local_storage, self.remote_storage)
+
+    def test_get_when_only_in_local(self):
+        self.local_storage.set_checksum(EXAMPLE_1_CONFIGURATION_ID, EXAMPLE_1_CHECKSUM)
+        self.assertEqual({EXAMPLE_1_CONFIGURATION_ID: EXAMPLE_1_CHECKSUM}, self.storage.get_all_checksums())
+
+    def test_get_when_only_in_external(self):
+        self.remote_storage.set_checksum(EXAMPLE_1_CONFIGURATION_ID, EXAMPLE_1_CHECKSUM)
+        self.assertEqual({EXAMPLE_1_CONFIGURATION_ID: EXAMPLE_1_CHECKSUM}, self.storage.get_all_checksums())
+
+    def test_get_when_in_local_and_external(self):
+        self.local_storage.set_checksum(EXAMPLE_1_CONFIGURATION_ID, EXAMPLE_1_CHECKSUM)
+        self.remote_storage.set_checksum(EXAMPLE_1_CONFIGURATION_ID, EXAMPLE_2_CHECKSUM)
+        self.assertEqual(EXAMPLE_1_CHECKSUM, self.storage.get_checksum(EXAMPLE_1_CONFIGURATION_ID))
+        self.assertEqual({EXAMPLE_1_CONFIGURATION_ID: EXAMPLE_1_CHECKSUM}, self.storage.get_all_checksums())
+
+    def test_set_only_affects_local(self):
+        self.storage.set_checksum(EXAMPLE_1_CONFIGURATION_ID, EXAMPLE_1_CHECKSUM)
+        self.assertEqual({EXAMPLE_1_CONFIGURATION_ID: EXAMPLE_1_CHECKSUM}, self.local_storage.get_all_checksums())
+        self.assertEqual({}, self.remote_storage.get_all_checksums())
 
 
 class TestDiskChecksumStorage(_TestChecksumStorage):

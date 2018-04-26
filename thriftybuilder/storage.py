@@ -10,9 +10,9 @@ from consullock.managers import ConsulLockManager
 from thriftybuilder.common import MissingOptionalDependencyError
 
 
-class ChecksumStorage(metaclass=ABCMeta):
+class ChecksumRetriever(metaclass=ABCMeta):
     """
-    Store of mappings between configurations, identified by ID, and checksums.
+    Retriever of mappings between configurations, identified by ID, and checksums.
     """
     @abstractmethod
     def get_checksum(self, configuration_id: str) -> Optional[str]:
@@ -29,6 +29,11 @@ class ChecksumStorage(metaclass=ABCMeta):
         :return: all stored mappings
         """
 
+
+class ChecksumStorage(ChecksumRetriever, metaclass=ABCMeta):
+    """
+    Store of mappings between configurations, identified by ID, and checksums.
+    """
     @abstractmethod
     def set_checksum(self, configuration_id: str, checksum: str):
         """
@@ -60,9 +65,9 @@ class MemoryChecksumStorage(ChecksumStorage):
     """
     In-memory storage for configuration -> checksum mappings.
     """
-    def __init__(self, *args, **kwargs):
+    def __init__(self, configuration_checksum_mappings: Mapping[str, str]=None):
         self._data: Dict[str, str] = {}
-        super().__init__(*args, **kwargs)
+        super().__init__(configuration_checksum_mappings)
 
     def get_checksum(self, configuration_id: str) -> Optional[str]:
         return self._data.get(configuration_id, None)
@@ -72,6 +77,36 @@ class MemoryChecksumStorage(ChecksumStorage):
 
     def set_checksum(self, configuration_id: str, checksum: str):
         self._data[configuration_id] = checksum
+
+
+class DoubleSourceChecksumStorage(ChecksumStorage):
+    """
+    Checksum storage that has primary checksum storage, which is used by default, and a secondary checksum source that
+    is consulted if a checksum is not in the primary source.
+    """
+    def __init__(self, local_checksum_storage: ChecksumStorage, external_checksum_retriever: ChecksumRetriever):
+        """
+        Constructor.
+        :param local_checksum_storage: local checksum storage (takes precedence over external source)
+        :param external_checksum_retriever: external checksum retrieval source (for when checksum is not in local
+        storage)
+        """
+        super().__init__()
+        self.primary_checksum_storage = local_checksum_storage
+        self.secondary_checksum_retriever = external_checksum_retriever
+
+    def get_checksum(self, configuration_id: str) -> Optional[str]:
+        primary_checksum = self.primary_checksum_storage.get_checksum(configuration_id)
+        if primary_checksum is not None:
+            return primary_checksum
+        return self.secondary_checksum_retriever.get_checksum(configuration_id)
+
+    def get_all_checksums(self) -> Dict[str, str]:
+        return {**self.secondary_checksum_retriever.get_all_checksums(),
+                **self.primary_checksum_storage.get_all_checksums()}
+
+    def set_checksum(self, configuration_id: str, checksum: str):
+        self.primary_checksum_storage.set_checksum(configuration_id, checksum)
 
 
 class DiskChecksumStorage(ChecksumStorage):
