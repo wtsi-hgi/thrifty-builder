@@ -107,8 +107,6 @@ class TestDockerUploader(_TestBuildArtifactUploader[DockerBuildConfiguration], T
         self.assertUploaded(configuration)
 
 
-
-
 del _TestBuildArtifactUploader
 
 if __name__ == "__main__":
