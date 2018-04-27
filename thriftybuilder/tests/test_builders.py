@@ -3,6 +3,7 @@ import unittest
 
 from thriftybuilder.builders import DockerBuilder, CircularDependencyBuildError, UnmanagedBuildError, \
     InvalidDockerfileBuildError, BuildStepError
+from thriftybuilder.storage import MemoryChecksumStorage
 from thriftybuilder.tests._common import TestWithDockerBuildConfiguration, RUN_DOCKER_COMMAND
 from thriftybuilder.tests._examples import EXAMPLE_IMAGE_NAME_2, EXAMPLE_IMAGE_NAME_1
 
@@ -13,7 +14,8 @@ class TestDockerBuilder(TestWithDockerBuildConfiguration):
     """
     def setUp(self):
         super().setUp()
-        self.docker_builder = DockerBuilder()
+        self.checksum_storage = MemoryChecksumStorage()
+        self.docker_builder = DockerBuilder(checksum_retriever=self.checksum_storage)
 
     def test_build_when_dockerfile_is_invalid(self):
         _, configuration = self.create_docker_setup(commands=["invalid"])
@@ -50,7 +52,7 @@ class TestDockerBuilder(TestWithDockerBuildConfiguration):
     def test_build_when_up_to_date(self):
         _, configuration = self.create_docker_setup()
         self.docker_builder.managed_build_configurations.add(configuration)
-        self.docker_builder.checksum_storage.set_checksum(
+        self.checksum_storage.set_checksum(
             configuration.identifier, self.docker_builder.checksum_calculator.calculate_checksum(configuration))
 
         build_results = self.docker_builder.build(configuration)
@@ -83,10 +85,30 @@ class TestDockerBuilder(TestWithDockerBuildConfiguration):
 
         for configuration in build_results.keys():
             checksum = self.docker_builder.checksum_calculator.calculate_checksum(configuration)
-            self.docker_builder.checksum_storage.set_checksum(configuration.identifier, checksum)
+            self.checksum_storage.set_checksum(configuration.identifier, checksum)
 
         build_results = self.docker_builder.build_all()
         self.assertCountEqual(configurations[2:], build_results)
+
+    def test_build_when_from_image_updated(self):
+        configurations = self.create_dependent_docker_build_configurations(2)
+        self.docker_builder.managed_build_configurations.add_all(configurations)
+
+        build_results = self.docker_builder.build_all()
+        assert len(build_results) == 2
+
+        for configuration in build_results.keys():
+            checksum = self.docker_builder.checksum_calculator.calculate_checksum(configuration)
+            self.checksum_storage.set_checksum(configuration.identifier, checksum)
+
+        parent_image = configurations[0]
+
+        with open(parent_image.dockerfile_location, "a") as file:
+            file.write(f"{RUN_DOCKER_COMMAND} echo 1")
+        parent_image.reload()
+
+        build_results = self.docker_builder.build_all()
+        self.assertEqual(2, len(build_results))
 
 
 if __name__ == "__main__":

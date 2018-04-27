@@ -67,7 +67,7 @@ class DockerChecksumCalculator(
         :return: the calculated checksum
         """
         hasher = self.hasher_generator()
-        for command in build_configuration.commands:
+        for command in build_configuration._commands:
             hasher.update(command.original.encode(DEFAULT_ENCODING))
         return hasher.generate()
 
