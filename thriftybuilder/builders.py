@@ -215,7 +215,8 @@ class Builder(Generic[BuildConfigurationType, BuildResultType, ChecksumCalculato
         up_to_date = existing_checksum == current_checksum
         # TODO: this assumes that all of the Docker registries contain the correct image...
         logger.debug(f"Determined that \"{build_configuration.identifier}\" is "
-                     f"{'' if up_to_date else ' not'} up-to-date (checksum={current_checksum} != {existing_checksum})")
+                     f"{'' if up_to_date else ' not'} up-to-date (checksum={current_checksum}"
+                     f"{'' if up_to_date else f' != ' + existing_checksum})")
         return up_to_date
 
 
