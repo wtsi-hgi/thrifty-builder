@@ -5,8 +5,6 @@ from copy import copy
 from typing import Optional, Dict, Mapping, Type
 from urllib.parse import urlparse
 
-from consullock.managers import ConsulLockManager
-
 from thriftybuilder.common import MissingOptionalDependencyError
 
 
@@ -176,6 +174,11 @@ class ConsulChecksumStorage(ChecksumStorage):
 
     def __init__(self, data_key: str, lock_key: str, url: str=None, token: str=None, consul_client=None,
                  configuration_checksum_mappings: Mapping[str, str] = None):
+        try:
+            from consullock.managers import ConsulLockManager
+        except ImportError:
+            raise RuntimeError("To use Consul storage, please install the requirements in `consul-requirements.txt`")
+
         Consul = ConsulChecksumStorage._load_consul_class()
 
         if url is not None and consul_client is not None:
