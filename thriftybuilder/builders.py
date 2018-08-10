@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
-from typing import Generic, TypeVar, Iterable, Set, Dict, Callable
+from typing import Generic, TypeVar, Iterable, Set, Dict, Callable, Optional
 
 from docker import APIClient
 from docker.errors import APIError
@@ -60,7 +60,7 @@ class BuildStepError(BuildFailedError):
     """
     Error raised if error occurs during a build step.
     """
-    def __init__(self, image_name: str, error_message: str, exit_code: int):
+    def __init__(self, image_name: str, error_message: str, exit_code: Optional[int]):
         super().__init__(
             image_name, message=f"Build for {image_name} failed with exit code {exit_code}: {error_message}")
         self.error_message = error_message
@@ -256,6 +256,6 @@ class DockerBuilder(Builder[DockerBuildConfiguration, str, DockerChecksumCalcula
 
         if "error" in log:
             error_details = log["errorDetail"]
-            raise BuildStepError(build_configuration.name, error_details["message"], error_details["code"])
+            raise BuildStepError(build_configuration.name, error_details["message"], error_details.get("code"))
 
         return build_configuration.identifier
