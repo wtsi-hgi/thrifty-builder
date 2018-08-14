@@ -1,6 +1,7 @@
+import json
 import re
 from json import JSONEncoder, JSONDecoder
-from typing import Iterable, Dict
+from typing import Iterable, Dict, Callable
 
 import os
 import yaml
@@ -41,18 +42,37 @@ class DockerRegistry:
     """
     Docker registry.
     """
-    def __init__(self, url: str, namespace: str=None, username: str=None, password: str=None):
+    @staticmethod
+    def default_repository_location_formatter(docker_registry: "DockerRegistry", image_name: str) -> str:
+        builder = [docker_registry.url]
+        if docker_registry.namespace is not None:
+            builder.append(docker_registry.namespace)
+        builder.append(image_name)
+        return "/".join(builder)
+
+    def __init__(self, url: str, namespace: str=None, username: str=None, password: str=None,
+                 repository_location_formatter: Callable[["DockerRegistry", str], str]
+                 =default_repository_location_formatter.__func__):
         """
         Constructor.
         :param url: URL of the docker repository (should not include protocol but will be stripped if present)
         :param namespace: namespace of repository
         :param username: username of upload user
         :param password: password of upload user
+        :param repository_location_formatter: used to form the repository location for image upload
         """
         self.url = re.sub(".*//", "", url)
         self.username = username
         self.password = password
         self.namespace = namespace
+        self.repository_location_formatter = repository_location_formatter
+
+    def get_repository_location(self, image_name: str) -> str:
+        return self.repository_location_formatter(self, image_name)
+
+    def __str__(self):
+        return json.dumps({"url": self.url, "namespace": self.namespace, "username": self.username,
+                           "password": self.password})
 
 
 class Configuration:
