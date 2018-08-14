@@ -61,6 +61,7 @@ class DockerBuildConfiguration(BuildConfiguration):
     """
     A configuration that describes how a Docker image is built.
     """
+    DEFAULT_IMAGE_TAG = "latest"
     _NAME_TAG_SEPARATOR = ":"
 
     @property
@@ -72,9 +73,9 @@ class DockerBuildConfiguration(BuildConfiguration):
         return self._identifier.split(DockerBuildConfiguration._NAME_TAG_SEPARATOR)[0]
 
     @property
-    def tag(self) -> Optional[str]:
+    def tag(self) -> str:
         if DockerBuildConfiguration._NAME_TAG_SEPARATOR not in self.identifier:
-            return None
+            return DockerBuildConfiguration.DEFAULT_IMAGE_TAG
         return self._identifier.split(DockerBuildConfiguration._NAME_TAG_SEPARATOR)[1]
 
     @property

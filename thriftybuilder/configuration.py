@@ -1,3 +1,4 @@
+import re
 from json import JSONEncoder, JSONDecoder
 from typing import Iterable, Dict
 
@@ -40,10 +41,18 @@ class DockerRegistry:
     """
     Docker registry.
     """
-    def __init__(self, url: str, username: str=None, password: str=None):
-        self.url = url
+    def __init__(self, url: str, namespace: str=None, username: str=None, password: str=None):
+        """
+        Constructor.
+        :param url: URL of the docker repository (should not include protocol but will be stripped if present)
+        :param namespace: namespace of repository
+        :param username: username of upload user
+        :param password: password of upload user
+        """
+        self.url = re.sub(".*//", "", url)
         self.username = username
         self.password = password
+        self.namespace = namespace
 
 
 class Configuration:

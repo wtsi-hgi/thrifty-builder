@@ -97,7 +97,7 @@ docker:
       dockerfile: /images/image-2/Dockerfile
       # Context assumed to be /images/image-2 
   registries:
-    - url: https://docker.io
+    - url: docker.io
       username: "{{ env[DOCKER_IO_USERNAME] }}"
       password: "{{ env[DOCKER_IO_PASSWORD] }}"
       
