@@ -78,7 +78,7 @@ class DockerUploader(BuildArtifactUploader[DockerBuildConfiguration]):
     def _upload(self, build_configuration: DockerBuildConfiguration):
         repository_location = self.docker_registry.get_repository_location(build_configuration.name)
 
-        # Does is a bit odd in that it requires the image to be tagged to indicate where it is to be uploaded
+        # Docker is a bit odd in that it requires the image to be tagged to indicate where it is to be uploaded
         self._docker_client.api.tag(build_configuration.identifier, repository=repository_location,
                                     tag=f"{build_configuration.tag}")
 
