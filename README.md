@@ -58,7 +58,7 @@ checksum_storage:
 checksum_storage:
   type: consul
   url: https://example.com:8500           # Optional: derived from Consul environment variables if not set
-  token: "{{ env[CONSUL_HTTP_TOKEN] }}"   # Optional: derived from Consul environment variables if not set
+  token: "{{ env['CONSUL_HTTP_TOKEN'] }}"   # Optional: derived from Consul environment variables if not set
   key: ci/image-checksums
   lock: ci/image-checksums.lock
 ```
@@ -98,13 +98,13 @@ docker:
       # Context assumed to be /images/image-2 
   registries:
     - url: docker.io
-      username: "{{ env[DOCKER_IO_USERNAME] }}"
-      password: "{{ env[DOCKER_IO_PASSWORD] }}"
+      username: "{{ env['DOCKER_IO_USERNAME'] }}"
+      password: "{{ env['DOCKER_IO_PASSWORD'] }}"
       
 checksum_storage:
   type: consul
-  url: "{{ env[CONSUL_HTTP_ADDR] }}"
-  token: "{{ env[CONSUL_HTTP_TOKEN] }}"
+  url: "{{ env['CONSUL_HTTP_ADDR'] }}"
+  token: "{{ env['CONSUL_HTTP_TOKEN'] }}"
   key: ci/image-checksums
   lock: ci/image-checksums.lock
 ```
