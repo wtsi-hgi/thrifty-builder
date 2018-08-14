@@ -5,6 +5,7 @@ from argparse import ArgumentParser
 from typing import List, NamedTuple, Dict, Optional
 
 from thriftybuilder._logging import create_logger
+from thriftybuilder.artifact_retriever import DockerImageRetriever
 from thriftybuilder.builders import DockerBuilder
 from thriftybuilder.common import ThriftyBuilderBaseError
 from thriftybuilder.configuration import read_configuration
@@ -103,8 +104,12 @@ def main(cli_arguments: List[str], stdin_content: Optional[str]=None):
         logger.info("Reading checksums from stdin")
         configuration.checksum_storage.set_all_checksums(json.loads(stdin_content))
 
-    docker_builder = DockerBuilder(managed_build_configurations=configuration.docker_build_configurations,
-                                   checksum_retriever=configuration.checksum_storage)
+    # TODO: allow use of the retriever to be optional
+    docker_image_retriever = DockerImageRetriever(configuration.docker_registries)
+
+    docker_builder = DockerBuilder(
+        managed_build_configurations=configuration.docker_build_configurations,
+        checksum_retriever=configuration.checksum_storage, docker_image_retriever=docker_image_retriever)
     build_results = docker_builder.build_all()
 
     if len(configuration.docker_registries) == 0:

@@ -6,6 +6,7 @@ from docker import APIClient
 from docker.errors import APIError
 
 from thriftybuilder._logging import create_logger
+from thriftybuilder.artifact_retriever import DockerImageRetriever
 from thriftybuilder.build_configurations import DockerBuildConfiguration, BuildConfigurationType, \
     BuildConfigurationManager
 from thriftybuilder.checksums import DockerChecksumCalculator, ChecksumCalculator
@@ -226,9 +227,11 @@ class DockerBuilder(Builder[DockerBuildConfiguration, str, DockerChecksumCalcula
     """
     def __init__(self, managed_build_configurations: Iterable[BuildConfigurationType]=None,
                  checksum_retriever: ChecksumRetriever=None,
-                 checksum_calculator_factory: Callable[[], DockerChecksumCalculator]=DockerChecksumCalculator):
+                 checksum_calculator_factory: Callable[[], DockerChecksumCalculator]=DockerChecksumCalculator,
+                 docker_image_retriever: DockerImageRetriever=None):
         super().__init__(managed_build_configurations, checksum_retriever, checksum_calculator_factory)
         self.checksum_calculator.managed_build_configurations = self.managed_build_configurations
+        self.docker_artifact_retriever = docker_image_retriever
         self._docker_client = APIClient()
 
     def __del__(self):
@@ -236,6 +239,7 @@ class DockerBuilder(Builder[DockerBuildConfiguration, str, DockerChecksumCalcula
 
     def _build(self, build_configuration: DockerBuildConfiguration) -> str:
         logger.info(f"Building Docker image: {build_configuration.identifier}")
+        self.docker_artifact_retriever.retrieve(build_configuration)
         logger.debug(f"{build_configuration.identifier} to be built using dockerfile "
                      f"\"{build_configuration.dockerfile_location}\" in context \"{build_configuration.context}\"")
         log_generator = self._docker_client.build(path=build_configuration.context, tag=build_configuration.identifier,
