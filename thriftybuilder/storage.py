@@ -149,6 +149,8 @@ class ConsulChecksumStorage(ChecksumStorage):
     CONSUL_HTTP_TOKEN_ENVIRONMENT_VARIABLE = "CONSUL_HTTP_TOKEN"
     CONSUL_SESSION_LOCK_DEFAULT_TIMEOUT = 120
     TEXT_ENCODING = "utf-8"
+    _IMPORT_MISSING_ERROR_MESSAGE = "To use Consul storage, please install the requirements in " \
+                                    "`consul-requirements.txt`"
 
     @staticmethod
     def _load_consul_class() -> Type:
@@ -160,9 +162,21 @@ class ConsulChecksumStorage(ChecksumStorage):
         try:
             from consul import Consul
         except ImportError as e:
-            raise MissingOptionalDependencyError(
-                "You must install `python-consul` separately to use this type of storage") from e
+            raise MissingOptionalDependencyError(ConsulChecksumStorage._IMPORT_MISSING_ERROR_MESSAGE) from e
         return Consul
+
+    @staticmethod
+    def _load_consul_lock_manager() -> Type:
+        """
+        Loads the ConsulLockManager class at run time (optional requirement).
+        :return: the Consul class
+        :raises MissingOptionalDependencyError: if a required dependency is not installed
+        """
+        try:
+            from consullock.managers import ConsulLockManager
+        except ImportError as e:
+            raise MissingOptionalDependencyError(ConsulChecksumStorage._IMPORT_MISSING_ERROR_MESSAGE) from e
+        return ConsulLockManager
 
     @property
     def url(self) -> str:
@@ -174,12 +188,8 @@ class ConsulChecksumStorage(ChecksumStorage):
 
     def __init__(self, data_key: str, lock_key: str, url: str=None, token: str=None, consul_client=None,
                  configuration_checksum_mappings: Mapping[str, str] = None):
-        try:
-            from consullock.managers import ConsulLockManager
-        except ImportError:
-            raise RuntimeError("To use Consul storage, please install the requirements in `consul-requirements.txt`")
-
         Consul = ConsulChecksumStorage._load_consul_class()
+        ConsulLockManager = ConsulChecksumStorage._load_consul_lock_manager()
 
         if url is not None and consul_client is not None:
             raise ValueError("Cannot use both `url` and `consul_client`")

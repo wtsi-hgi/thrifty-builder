@@ -11,8 +11,11 @@ determine if an image has already been built before, even if the build cache has
 place on a different machine with a separate cache.
 
 In our setup, we are building a large number of Docker images in our CI. The CI job runs on a different machine each 
-time (with separate caches), meaning that if `docker build` was used, all images would be rebuild every time the CI 
-runs. The aim is to minimise our CI run time and to keep our Docker images as stable as possible (it is usually 
+time (with separate caches), meaning that if `docker build` was used, all images would be rebuild every time 
+the CI runs. Pulling first would sped things up but it would require all images to be downloaded to the build machine 
+first! 
+
+The aim is to minimise our CI run time and to keep our Docker images as stable as possible (it is usually 
 extremely difficult to version everything that goes into an image so each re-build will create a slightly different 
 image, even if the context and Dockerfile are the same).  
 
@@ -58,7 +61,7 @@ checksum_storage:
 checksum_storage:
   type: consul
   url: https://example.com:8500           # Optional: derived from Consul environment variables if not set
-  token: "{{ env[CONSUL_HTTP_TOKEN] }}"   # Optional: derived from Consul environment variables if not set
+  token: "{{ env['CONSUL_HTTP_TOKEN'] }}"   # Optional: derived from Consul environment variables if not set
   key: ci/image-checksums
   lock: ci/image-checksums.lock
 ```
@@ -97,14 +100,14 @@ docker:
       dockerfile: /images/image-2/Dockerfile
       # Context assumed to be /images/image-2 
   registries:
-    - url: https://docker.io
-      username: "{{ env[DOCKER_IO_USERNAME] }}"
-      password: "{{ env[DOCKER_IO_PASSWORD] }}"
+    - url: docker.io
+      username: "{{ env['DOCKER_IO_USERNAME'] }}"
+      password: "{{ env['DOCKER_IO_PASSWORD'] }}"
       
 checksum_storage:
   type: consul
-  url: "{{ env[CONSUL_HTTP_ADDR] }}"
-  token: "{{ env[CONSUL_HTTP_TOKEN] }}"
+  url: "{{ env['CONSUL_HTTP_ADDR'] }}"
+  token: "{{ env['CONSUL_HTTP_TOKEN'] }}"
   key: ci/image-checksums
   lock: ci/image-checksums.lock
 ```

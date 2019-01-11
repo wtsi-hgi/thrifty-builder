@@ -5,10 +5,10 @@ from typing import Generic
 import docker
 
 from thriftybuilder._logging import create_logger
-from thriftybuilder.checksums import ChecksumCalculator, DockerChecksumCalculator
-from thriftybuilder.configuration import DockerRegistry
-from thriftybuilder.common import ThriftyBuilderBaseError
 from thriftybuilder.build_configurations import BuildConfigurationType, DockerBuildConfiguration
+from thriftybuilder.checksums import ChecksumCalculator, DockerChecksumCalculator
+from thriftybuilder.common import ThriftyBuilderBaseError
+from thriftybuilder.configuration import DockerRegistry
 from thriftybuilder.storage import ChecksumStorage
 
 logger = create_logger(__name__)
@@ -22,7 +22,7 @@ class UploadError(ThriftyBuilderBaseError):
 
 class ImageNotFoundError(UploadError):
     """
-    Error raised if image to be uplaoded is not found.
+    Error raised if image to be uploaded is not found.
     """
     def __init__(self, name: str, tag: str):
         self.name = name
@@ -76,20 +76,19 @@ class DockerUploader(BuildArtifactUploader[DockerBuildConfiguration]):
         self._docker_client = docker.from_env()
 
     def _upload(self, build_configuration: DockerBuildConfiguration):
-        repository = f"{self.docker_registry.url}/{build_configuration.name}"
-        logger.info(f"Uploading {build_configuration.name} (tag={build_configuration.tag}) to "
-                    f"{self.docker_registry.url}")
-        if build_configuration.tag is None:
-            image = build_configuration.name
-        else:
-            image = f"{build_configuration.name}:{build_configuration.tag}"
-        self._docker_client.api.tag(image, repository, build_configuration.tag)
+        repository_location = self.docker_registry.get_repository_location(build_configuration.name)
+
+        # Docker is a bit odd in that it requires the image to be tagged to indicate where it is to be uploaded
+        self._docker_client.api.tag(build_configuration.identifier, repository=repository_location,
+                                    tag=f"{build_configuration.tag}")
 
         auth_config = None
         if self.docker_registry.username is not None and self.docker_registry.password is not None:
             auth_config = {"username": self.docker_registry.username, "password": self.docker_registry.password}
 
-        upload_stream = self._docker_client.images.push(repository, build_configuration.tag, stream=True,
+        # XXX: It is an assumption that the repository url is built like this
+        logger.info(f"Uploading image to {repository_location} with tag: {build_configuration.tag}")
+        upload_stream = self._docker_client.images.push(repository_location, build_configuration.tag, stream=True,
                                                         auth_config=auth_config)
         for line in upload_stream:
             line = line.decode(DockerUploader._TEXT_ENCODING)

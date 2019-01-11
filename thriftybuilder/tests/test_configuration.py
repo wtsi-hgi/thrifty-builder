@@ -13,7 +13,8 @@ class TestReadConfiguration(TestWithConfiguration):
     Tests for `read_configuration`.
     """
     def test_with_template(self):
-        registry = DockerRegistry(_EXAMPLE_URL_1, "{{ env['EXAMPLE_USERNAME_1'] }}", "{{ env['EXAMPLE_PASSWORD_1'] }}")
+        registry = DockerRegistry(_EXAMPLE_URL_1, username="{{ env['EXAMPLE_USERNAME_1'] }}",
+                                  password="{{ env['EXAMPLE_PASSWORD_1'] }}")
         configuration = Configuration(docker_registries=(registry, ))
         configuration_location = self.configuration_to_file(configuration)
 
