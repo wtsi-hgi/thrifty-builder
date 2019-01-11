@@ -1,3 +1,4 @@
 wheel
 capturewrap>=1.1.0
+coverage
 useintest>=5.0.0
