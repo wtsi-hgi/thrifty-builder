@@ -1,2 +1,3 @@
+wheel
 capturewrap>=1.1.0
 useintest>=5.0.0
