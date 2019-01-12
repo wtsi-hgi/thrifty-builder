@@ -70,13 +70,14 @@ class DockerBuildConfiguration(BuildConfiguration):
 
     @property
     def name(self) -> str:
-        return self._identifier.split(DockerBuildConfiguration._NAME_TAG_SEPARATOR)[0]
+        return self._identifier
 
     @property
-    def tag(self) -> str:
-        if DockerBuildConfiguration._NAME_TAG_SEPARATOR not in self.identifier:
-            return DockerBuildConfiguration.DEFAULT_IMAGE_TAG
-        return self._identifier.split(DockerBuildConfiguration._NAME_TAG_SEPARATOR)[1]
+    def tags(self) -> List[str]:
+        if len(self._tags) > 0:
+            return self._tags
+        else:
+            return [DockerBuildConfiguration.DEFAULT_IMAGE_TAG]
 
     @property
     def requires(self) -> List[str]:
@@ -143,12 +144,13 @@ class DockerBuildConfiguration(BuildConfiguration):
             raise ValueError("context must be an absolute path")
         self._context = context
 
-    def __init__(self, image_name: str, dockerfile_location: str, context: str=None):
+    def __init__(self, image_name: str, dockerfile_location: str, context: str=None, tags: List[str]=None):
         """
         Constructor.
         :param image_name: name of the image built by this configuration (becomes its identifier)
         :param dockerfile_location: the location of the Dockerfile that describes how the image is built
         :param context: context in which the image is built
+        :param tags: list of strings to tag the built image with
         """
         if not isinstance(image_name, str):
             raise ValueError(f"`image_name` must be a string - {type(image_name)} given")
@@ -160,6 +162,14 @@ class DockerBuildConfiguration(BuildConfiguration):
         self._identifier = image_name
         self.dockerfile_location = dockerfile_location
         self.context = context if context is not None else os.path.dirname(self.dockerfile_location)
+        self._tags = tags if tags is not None else []
+
+        if DockerBuildConfiguration._NAME_TAG_SEPARATOR in self._identifier:
+            name_tag = self._identifier.split(DockerBuildConfiguration._NAME_TAG_SEPARATOR)
+            self._identifier = name_tag[0]
+            tag = name_tag[1]
+            if len(tag) > 0:
+                self._tags.insert(0, tag)
 
     def reload(self):
         """

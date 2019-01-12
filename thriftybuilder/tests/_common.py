@@ -31,7 +31,7 @@ from thriftybuilder.tests._examples import name_generator, EXAMPLE_FROM_IMAGE_NA
 
 def create_docker_setup(
         *, commands: Iterable[str]=None, context_files: Dict[str, Optional[str]]=None,
-        image_name: str=_RANDOM_NAME, from_image_name: str=EXAMPLE_FROM_IMAGE_NAME) \
+        image_name: str=_RANDOM_NAME, tags: List[str]=[], from_image_name: str=EXAMPLE_FROM_IMAGE_NAME) \
         -> Tuple[str, DockerBuildConfiguration]:
     """
     Creates a Docker setup.
@@ -53,7 +53,7 @@ def create_docker_setup(
         raise ValueError(f"Exactly one \"{FROM_DOCKER_COMMAND}\" command is expected: {commands}")
 
     context_files = context_files if context_files is not None else {}
-    image_name = image_name if image_name != _RANDOM_NAME else f"{name_generator()}:latest"
+    image_name = image_name if image_name != _RANDOM_NAME else f"{name_generator()}"
     temp_directory = mkdtemp()
 
     dockerfile_location = os.path.join(temp_directory, DOCKERFILE_PATH)
@@ -69,7 +69,8 @@ def create_docker_setup(
                 value = ""
             file.write(value)
 
-    return temp_directory, DockerBuildConfiguration(image_name, dockerfile_location)
+    context = None
+    return temp_directory, DockerBuildConfiguration(image_name, dockerfile_location, context, tags)
 
 
 class TestWithDockerBuildConfiguration(unittest.TestCase, metaclass=ABCMeta):
@@ -100,6 +101,9 @@ class TestWithDockerBuildConfiguration(unittest.TestCase, metaclass=ABCMeta):
                 docker_client.images.remove(identifier)
             except (ImageNotFound, NullResource):
                 pass
+
+        docker_client.close()
+        self.docker_client.close()
 
     def create_docker_setup(self, **kwargs) -> Tuple[str, DockerBuildConfiguration]:
         """
@@ -181,12 +185,17 @@ class TestWithDockerRegistry(unittest.TestCase, metaclass=ABCMeta):
 
     def is_uploaded(self, configuration: DockerBuildConfiguration) -> bool:
         docker_client = docker.from_env()
+        check_tag = None
+        if len(configuration.tags) > 0:
+            check_tag = configuration.tags[0]
+        is_uploaded = False
         try:
-            docker_client.images.pull(f"{self.registry_location}/{configuration.name}", tag=configuration.tag)
-            return True
+            docker_client.images.pull(f"{self.registry_location}/{configuration.name}", tag=check_tag)
+            is_uploaded = True
         except NotFound:
-            return False
-
+            pass
+        docker_client.close()
+        return is_uploaded
 
 class TestWithConfiguration(unittest.TestCase, metaclass=ABCMeta):
     """

@@ -114,6 +114,7 @@ def main(cli_arguments: List[str], stdin_content: Optional[str]=None):
             uploader = DockerUploader(configuration.checksum_storage, repository)
             for build_configuration in build_results.keys():
                 uploader.upload(build_configuration)
+            uploader.close()
 
     all_built: Dict[str, str] = {}
     built_now: Dict[str, str] = {}
