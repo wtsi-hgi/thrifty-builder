@@ -165,7 +165,7 @@ class DockerBuildConfiguration(BuildConfiguration):
         self._tags = set(tags) if tags is not None else set()
 
         if DockerBuildConfiguration._NAME_TAG_SEPARATOR in self._identifier:
-            _identifier, tag = self._identifier.split(DockerBuildConfiguration._NAME_TAG_SEPARATOR)
+            self._identifier, tag = self._identifier.split(DockerBuildConfiguration._NAME_TAG_SEPARATOR)
             if len(tag.strip()) == 0:
                 raise ValueError(f"Invalid image tag (do not include tag if not required): {image_name}")
             self._tags.add(tag)

@@ -112,7 +112,6 @@ class TestDockerUploader(_TestBuildArtifactUploader[DockerBuildConfiguration], T
         self.uploader.upload(configuration)
         self.assertUploaded(configuration)
 
-
     def test_upload_not_tagged(self):
         configuration = self.create_built_configuration(dict(image_name=name_generator()))
         self.uploader.upload(configuration)
