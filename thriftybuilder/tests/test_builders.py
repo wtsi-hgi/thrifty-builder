@@ -77,6 +77,8 @@ class TestDockerBuilder(TestWithDockerBuildConfiguration):
             {configuration: configuration.identifier for configuration in configurations}, build_results)
 
     def test_build_all_when_some_up_to_date(self):
+        import logging
+        logging.getLogger().setLevel(logging.DEBUG)
         configurations = self.create_dependent_docker_build_configurations(4)
         self.docker_builder.managed_build_configurations.add_all(configurations)
 

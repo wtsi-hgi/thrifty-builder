@@ -83,6 +83,17 @@ class TestMain(TestWithDockerBuildConfiguration, TestWithConsulService, TestWith
         for configuration in self.build_configurations:
             self.assertTrue(self.is_uploaded(configuration))
 
+    def test_cached_build_always_upload(self):
+        docker_registry = DockerRegistry(self.registry_location)
+        self.run_configuration.docker_registries.append(docker_registry)
+        self.pre_built_configuration.always_upload = True
+        stdout, stderr = self._run(self.run_configuration)
+
+        parsed_result = json.loads(stdout)
+        assert len(parsed_result) == len(self.build_configurations)
+        for configuration in self.build_configurations:
+            self.assertTrue(self.is_uploaded(configuration))
+
     def test_build_then_output_all(self):
         checksums_as_json = json.dumps(self.run_configuration.checksum_storage.get_all_checksums())
         stdout, stderr = self._run(self.run_configuration, output_built_only=False, stdin=checksums_as_json)
