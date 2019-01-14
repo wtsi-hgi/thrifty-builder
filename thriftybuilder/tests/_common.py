@@ -184,19 +184,16 @@ class TestWithDockerRegistry(unittest.TestCase, metaclass=ABCMeta):
             self._registry_controller.stop_service(self._docker_registry_service)
 
     def is_uploaded(self, configuration: DockerBuildConfiguration) -> bool:
-        # Note: change to context manager if `DockerClient` gets support for one in the future
         docker_client = docker.from_env()
-        check_tag = None
-        if len(configuration.tags) > 0:
-            check_tag = configuration.tags[0]
-        is_uploaded = False
         try:
-            docker_client.images.pull(f"{self.registry_location}/{configuration.name}", tag=check_tag)
-            is_uploaded = True
-        except NotFound:
-            pass
-        docker_client.close()
-        return is_uploaded
+            for check_tag in configuration.tags:
+                try:
+                    docker_client.images.pull(f"{self.registry_location}/{configuration.name}", tag=check_tag)
+                except NotFound:
+                    return False
+            return True
+        finally:
+            docker_client.close()
 
 
 class TestWithConfiguration(unittest.TestCase, metaclass=ABCMeta):
