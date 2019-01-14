@@ -77,6 +77,12 @@ class DockerUploader(BuildArtifactUploader[DockerBuildConfiguration]):
         self.docker_registry = docker_registry
         self._docker_client = docker.from_env()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.close()
+
     def close(self):
         self._docker_client.close()
 

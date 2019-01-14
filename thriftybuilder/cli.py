@@ -111,10 +111,9 @@ def main(cli_arguments: List[str], stdin_content: Optional[str]=None):
         logger.info("No Docker registries defined so will not upload images (or update checksums in store)")
     else:
         for repository in configuration.docker_registries:
-            uploader = DockerUploader(configuration.checksum_storage, repository)
-            for build_configuration in build_results.keys():
-                uploader.upload(build_configuration)
-            uploader.close()
+            with DockerUploader(configuration.checksum_storage, repository) as uploader:
+                for build_configuration in build_results.keys():
+                    uploader.upload(build_configuration)
 
     all_built: Dict[str, str] = {}
     built_now: Dict[str, str] = {}
