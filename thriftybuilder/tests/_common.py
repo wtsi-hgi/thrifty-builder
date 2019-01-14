@@ -31,8 +31,8 @@ from thriftybuilder.tests._examples import name_generator, EXAMPLE_FROM_IMAGE_NA
 
 def create_docker_setup(
         *, commands: Iterable[str]=None, context_files: Dict[str, Optional[str]]=None,
-        image_name: str=_RANDOM_NAME, tags: List[str]=[], from_image_name: str=EXAMPLE_FROM_IMAGE_NAME) \
-        -> Tuple[str, DockerBuildConfiguration]:
+        image_name: str=_RANDOM_NAME, tags: List[str]=[], always_upload: bool=False,
+        from_image_name: str=EXAMPLE_FROM_IMAGE_NAME) -> Tuple[str, DockerBuildConfiguration]:
     """
     Creates a Docker setup.
     :param commands: commands to put in the Dockerfile. If `None` and `from_image_name` is set, FROM will be set
@@ -70,8 +70,7 @@ def create_docker_setup(
             file.write(value)
 
     context = None
-    return temp_directory, DockerBuildConfiguration(image_name, dockerfile_location, context, tags)
-
+    return temp_directory, DockerBuildConfiguration(image_name, dockerfile_location, context, tags, always_upload)
 
 class TestWithDockerBuildConfiguration(unittest.TestCase, metaclass=ABCMeta):
     """
@@ -185,6 +184,7 @@ class TestWithDockerRegistry(unittest.TestCase, metaclass=ABCMeta):
 
     def is_uploaded(self, configuration: DockerBuildConfiguration) -> bool:
         docker_client = docker.from_env()
+<<<<<<< HEAD
         check_tag = None
         if len(configuration.tags) > 0:
             check_tag = configuration.tags[0]
@@ -194,6 +194,17 @@ class TestWithDockerRegistry(unittest.TestCase, metaclass=ABCMeta):
             is_uploaded = True
         except NotFound:
             pass
+=======
+        if len(configuration.tags) == 0:
+            return False
+        is_uploaded = True
+        for tag in configuration.tags:
+            try:
+                docker_client.images.pull(f"{self.registry_location}/{configuration.name}", tag=tag)
+            except NotFound:
+                is_uploaded = False
+                break
+>>>>>>> master
         docker_client.close()
         return is_uploaded
 

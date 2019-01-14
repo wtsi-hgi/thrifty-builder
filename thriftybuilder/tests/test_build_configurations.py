@@ -134,6 +134,14 @@ class TestDockerBuildConfiguration(TestWithDockerBuildConfiguration):
         context_location, configuration = self.create_docker_setup()
         self.assertEqual(os.path.join(context_location, DOCKERFILE_PATH), configuration.dockerfile_location)
 
+    def test_always_upload_false(self):
+        context_location, configuration = self.create_docker_setup(always_upload=False)
+        self.assertFalse(configuration.always_upload)
+
+    def test_always_upload_true(self):
+        context_location, configuration = self.create_docker_setup(always_upload=True)
+        self.assertTrue(configuration.always_upload)
+
     def test_context(self):
         context_location, configuration = self.create_docker_setup()
         self.assertEqual(context_location, configuration.context)

@@ -144,7 +144,7 @@ class DockerBuildConfiguration(BuildConfiguration):
             raise ValueError("context must be an absolute path")
         self._context = context
 
-    def __init__(self, image_name: str, dockerfile_location: str, context: str=None, tags: List[str]=None):
+    def __init__(self, image_name: str, dockerfile_location: str, context: str=None, tags: List[str]=None, always_upload: bool=False):
         """
         Constructor.
         :param image_name: name of the image built by this configuration (becomes its identifier)
@@ -163,6 +163,7 @@ class DockerBuildConfiguration(BuildConfiguration):
         self.dockerfile_location = dockerfile_location
         self.context = context if context is not None else os.path.dirname(self.dockerfile_location)
         self._tags = tags if tags is not None else []
+        self.always_upload = always_upload
 
         if DockerBuildConfiguration._NAME_TAG_SEPARATOR in self._identifier:
             name_tag = self._identifier.split(DockerBuildConfiguration._NAME_TAG_SEPARATOR)
