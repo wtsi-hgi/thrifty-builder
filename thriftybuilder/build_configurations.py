@@ -163,6 +163,7 @@ class DockerBuildConfiguration(BuildConfiguration):
         self.dockerfile_location = dockerfile_location
         self.context = context if context is not None else os.path.dirname(self.dockerfile_location)
         self._tags = set(tags) if tags is not None else set()
+        self.always_upload = always_upload
 
         if DockerBuildConfiguration._NAME_TAG_SEPARATOR in self._identifier:
             self._identifier, tag = self._identifier.split(DockerBuildConfiguration._NAME_TAG_SEPARATOR)
