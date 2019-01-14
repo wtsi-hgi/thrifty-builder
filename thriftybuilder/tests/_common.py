@@ -31,13 +31,14 @@ from thriftybuilder.tests._examples import name_generator, EXAMPLE_FROM_IMAGE_NA
 
 def create_docker_setup(
         *, commands: Iterable[str]=None, context_files: Dict[str, Optional[str]]=None,
-        image_name: str=_RANDOM_NAME, tags: List[str]=[], from_image_name: str=EXAMPLE_FROM_IMAGE_NAME) \
+        image_name: str=_RANDOM_NAME, tags: List[str]=None, from_image_name: str=EXAMPLE_FROM_IMAGE_NAME) \
         -> Tuple[str, DockerBuildConfiguration]:
     """
     Creates a Docker setup.
     :param commands: commands to put in the Dockerfile. If `None` and `from_image_name` is set, FROM will be set
     :param context_files: dictionary where the key is the name of the context file and the value is its content
     :param image_name: name of the image to setup a build configuration for
+    :param tags: list of strings to tag the built image with
     :param from_image_name: the image that the setup one is based off (FROM added to commands if not `None`)
     :return: tuple where the first element is the directory that acts as the context and the second is the associated
     build configuration
@@ -69,8 +70,7 @@ def create_docker_setup(
                 value = ""
             file.write(value)
 
-    context = None
-    return temp_directory, DockerBuildConfiguration(image_name, dockerfile_location, context, tags)
+    return temp_directory, DockerBuildConfiguration(image_name, dockerfile_location, tags=tags)
 
 
 class TestWithDockerBuildConfiguration(unittest.TestCase, metaclass=ABCMeta):
@@ -184,6 +184,7 @@ class TestWithDockerRegistry(unittest.TestCase, metaclass=ABCMeta):
             self._registry_controller.stop_service(self._docker_registry_service)
 
     def is_uploaded(self, configuration: DockerBuildConfiguration) -> bool:
+        # Note: change to context manager if `DockerClient` gets support for one in the future
         docker_client = docker.from_env()
         check_tag = None
         if len(configuration.tags) > 0:
@@ -196,6 +197,7 @@ class TestWithDockerRegistry(unittest.TestCase, metaclass=ABCMeta):
             pass
         docker_client.close()
         return is_uploaded
+
 
 class TestWithConfiguration(unittest.TestCase, metaclass=ABCMeta):
     """
