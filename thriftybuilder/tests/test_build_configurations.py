@@ -80,6 +80,10 @@ class TestDockerBuildConfiguration(TestWithDockerBuildConfiguration):
         _, configuration = self.create_docker_setup(image_name=EXAMPLE_IMAGE_NAME)
         self.assertEqual(EXAMPLE_IMAGE_NAME, configuration.identifier)
 
+    def test_invalid_identifier(self):
+        with self.assertRaises(ValueError):
+            self.create_docker_setup(image_name=f"{EXAMPLE_IMAGE_NAME}:")
+
     def test_requires(self):
         _, configuration = self.create_docker_setup(from_image_name=EXAMPLE_FROM_IMAGE_NAME)
         self.assertCountEqual([EXAMPLE_FROM_IMAGE_NAME], configuration.requires)
@@ -155,6 +159,12 @@ class TestDockerBuildConfiguration(TestWithDockerBuildConfiguration):
 
         self.assertCountEqual((f"{configuration.context}/{file_name}" for file_name in files_to_ignore),
                               configuration.get_ignored_files())
+
+    def test_tags(self):
+        tags = ["version", "latest"]
+        other_tag = "other"
+        _, configuration = self.create_docker_setup(image_name=f"{EXAMPLE_IMAGE_NAME}:{other_tag}", tags=tags)
+        self.assertSetEqual(set(tags + [other_tag]), configuration.tags)
 
 
 if __name__ == "__main__":
