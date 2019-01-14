@@ -101,7 +101,14 @@ class TestDockerUploader(_TestBuildArtifactUploader[DockerBuildConfiguration], T
         self.assertUploaded(configuration)
 
     def test_upload_tagged(self):
-        configuration = self.create_built_configuration(dict(image_name=f"{name_generator()}", tags=["version"]))
+        configuration = self.create_built_configuration(dict(image_name=f"{name_generator()}",
+                                                             tags=["version"]))
+        self.uploader.upload(configuration)
+        self.assertUploaded(configuration)
+
+    def test_upload_with_multiple_tags(self):
+        configuration = self.create_built_configuration(dict(image_name=f"{name_generator()}",
+                                                             tags=["version", "latest"]))
         self.uploader.upload(configuration)
         self.assertUploaded(configuration)
 
