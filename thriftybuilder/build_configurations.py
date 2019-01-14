@@ -170,7 +170,8 @@ class DockerBuildConfiguration(BuildConfiguration):
             self._identifier = name_tag[0]
             tag = name_tag[1]
             if len(tag) > 0:
-                self._tags.insert(0, tag)
+                if tag not in self._tags:
+                    self._tags.insert(0, tag)
 
     def reload(self):
         """
