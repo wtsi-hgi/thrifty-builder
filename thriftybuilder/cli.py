@@ -119,8 +119,8 @@ def main(cli_arguments: List[str], stdin_content: Optional[str]=None):
     else:
         for repository in configuration.docker_registries:
             with DockerUploader(configuration.checksum_storage, repository) as uploader:
-            for build_configuration in build_configurations_to_upload:
-                uploader.upload(build_configuration)
+                for build_configuration in build_configurations_to_upload:
+                    uploader.upload(build_configuration)
 
     all_built: Dict[str, str] = {}
     built_now: Dict[str, str] = {}
