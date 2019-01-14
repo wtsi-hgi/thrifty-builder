@@ -201,6 +201,7 @@ class TestDockerBuildConfiguration(TestWithDockerBuildConfiguration, TestWithCon
         self.assertEqual(conf.dockerfile_location, docker_build_config.dockerfile_location)
         self.assertEqual(context_location, docker_build_config.context)
         self.assertSetEqual(set([_EXAMPLE_TAG_1, _EXAMPLE_TAG_2, "example-non-templated-tag"]), docker_build_config.tags)
+        self.assertTrue(docker_build_config.always_upload)
 
 if __name__ == "__main__":
     unittest.main()
