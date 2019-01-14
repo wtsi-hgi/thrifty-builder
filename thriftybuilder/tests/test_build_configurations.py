@@ -174,6 +174,11 @@ class TestDockerBuildConfiguration(TestWithDockerBuildConfiguration):
         _, configuration = self.create_docker_setup(image_name=f"{EXAMPLE_IMAGE_NAME}:{other_tag}", tags=tags)
         self.assertSetEqual(set(tags + [other_tag]), configuration.tags)
 
+    def test_default_tag(self):
+        default_tag = "latest"  # FIXME maybe not hard code this value?
+        _, configuration = self.create_docker_setup(image_name=f"{EXAMPLE_IMAGE_NAME}")
+        self.assertEqual(1, len(configuration.tags))
+        self.assertEqual(default_tag, list(configuration.tags)[0])
 
 if __name__ == "__main__":
     unittest.main()
