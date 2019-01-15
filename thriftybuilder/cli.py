@@ -3,6 +3,7 @@ import logging
 import sys
 from argparse import ArgumentParser
 from typing import List, NamedTuple, Dict, Optional
+import docker
 
 from thriftybuilder._logging import create_logger
 from thriftybuilder.builders import DockerBuilder
@@ -113,13 +114,15 @@ def main(cli_arguments: List[str], stdin_content: Optional[str]=None):
         if build_configuration.always_upload:
             if build_configuration not in build_configurations_to_upload:
                 # build configuration was not just rebuilt but we want to tag it, so pull it from the registries before tagging
+                docker_client = docker.from_env()
                 for docker_registry in configuration.docker_registries:
                     repository_location = docker_registry.get_repository_location(build_configuration.name)
                     auth_config = None
                     if docker_registry.username is not None and docker_registry.password is not None:
                         auth_config = {"username": docker_registry.username, "password": docker_registry.password}
                     logger.info(f"Pulling image from {repository_location}")
-                    self._docker_client.images.pull(repository_location, auth_config=auth_config)
+                    docker_client.images.pull(repository_location, auth_config=auth_config)
+                docker_client.close()
                 # since always_upload is set, add this build configuration to the list of configs to upload
                 build_configurations_to_upload.append(build_configuration)
 
