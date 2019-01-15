@@ -1,5 +1,6 @@
 import os
 import unittest
+import tempfile
 
 from thriftybuilder.meta import PACKAGE_NAME
 from thriftybuilder.build_configurations import DockerBuildConfiguration, _ADD_DOCKER_COMMAND, \
@@ -183,7 +184,7 @@ class TestDockerBuildConfiguration(TestWithDockerBuildConfiguration):
         self.assertEqual(1, len(configuration.tags))
         self.assertEqual(default_tag, list(configuration.tags)[0])
 
-class TestDockerBuildConfiguration(TestWithDockerBuildConfiguration, TestWithConfiguration):
+class TestDockerBuildConfigurationWithConfiguration(TestWithDockerBuildConfiguration, TestWithConfiguration):
     def test_full_docker_build_configuration(self):
         context_location, conf = self.create_docker_setup()
         docker_build_config = DockerBuildConfiguration(image_name="example-image-name", dockerfile_location=conf.dockerfile_location, context=context_location, tags=["{{ env['EXAMPLE_TAG_1'] }}","{{ env['EXAMPLE_TAG_2'] }}","example-non-templated-tag"], always_upload=True)
@@ -202,6 +203,45 @@ class TestDockerBuildConfiguration(TestWithDockerBuildConfiguration, TestWithCon
         self.assertEqual(context_location, docker_build_config.context)
         self.assertSetEqual(set([_EXAMPLE_TAG_1, _EXAMPLE_TAG_2, "example-non-templated-tag"]), docker_build_config.tags)
         self.assertTrue(docker_build_config.always_upload)
+
+    def test_full_docker_build_configuration_from_string(self):
+        context_location, conf = self.create_docker_setup()
+        #        docker_build_config = DockerBuildConfiguration(image_name="example-image-name", dockerfile_location=conf.dockerfile_location, context=context_location, tags=["{{ env['EXAMPLE_TAG_1'] }}","{{ env['EXAMPLE_TAG_2'] }}","example-non-templated-tag"], always_upload=True)
+        #       configuration = Configuration(docker_build_configurations=BuildConfigurationContainer[DockerBuildConfiguration]([docker_build_config,]))
+        #      configuration_location = self.configuration_to_file(configuration)
+        with tempfile.NamedTemporaryFile(delete=False) as config_file:
+            config_file.write(f"""
+              "checksum_storage":
+                "type": "stdio"
+              "docker":
+                "images":
+                  - "always_upload": true
+                    "context": "{context_location}"
+                    "dockerfile": "{conf.dockerfile_location}"
+                    "name": "example-image-name"
+                    "tags":
+                      - "{{{{ env['EXAMPLE_TAG_2'] }}}}"
+                      - "example-non-templated-tag"
+                      - "{{{{ env['EXAMPLE_TAG_1'] }}}}"
+              "registries": []
+            """.encode())
+            configuration_location = config_file.name
+            config_file.close()
+
+            os.environ["EXAMPLE_TAG_1"] = _EXAMPLE_TAG_1
+            os.environ["EXAMPLE_TAG_2"] = _EXAMPLE_TAG_2
+
+            configuration = read_configuration(configuration_location)
+            self.assertEqual(1, len(configuration.docker_build_configurations))
+            docker_build_config = list(configuration.docker_build_configurations)[0]
+            self.assertEqual("example-image-name", docker_build_config.name)
+            self.assertEqual("example-image-name", docker_build_config.identifier)
+            self.assertEqual(conf.dockerfile_location, docker_build_config.dockerfile_location)
+            self.assertEqual(context_location, docker_build_config.context)
+            self.assertSetEqual(set([_EXAMPLE_TAG_1, _EXAMPLE_TAG_2, "example-non-templated-tag"]), docker_build_config.tags)
+            self.assertTrue(docker_build_config.always_upload)
+
+
 
 if __name__ == "__main__":
     unittest.main()
