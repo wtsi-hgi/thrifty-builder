@@ -127,7 +127,7 @@ def main(cli_arguments: List[str], stdin_content: Optional[str]=None):
                         logger.info(f"Could not pull from {repository_location}")
                         continue
                     logger.info(f"Pulled {repository_location}, tagging it with local {build_configuration.identifier}")
-                    self._docker_client.api.tag(repository_location, repository=build_configuration.identifier)
+                    docker_client.api.tag(repository_location, repository=build_configuration.identifier)
                 docker_client.close()
                 # since always_upload is set, add this build configuration to the list of configs to upload
                 build_configurations_to_upload.append(build_configuration)
