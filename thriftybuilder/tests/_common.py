@@ -70,7 +70,9 @@ def create_docker_setup(
                 value = ""
             file.write(value)
 
-    return temp_directory, DockerBuildConfiguration(image_name, dockerfile_location, tags=tags, always_upload=always_upload)
+    return temp_directory, DockerBuildConfiguration(
+        image_name, dockerfile_location, tags=tags, always_upload=always_upload)
+
 
 class TestWithDockerBuildConfiguration(unittest.TestCase, metaclass=ABCMeta):
     """
@@ -86,7 +88,6 @@ class TestWithDockerBuildConfiguration(unittest.TestCase, metaclass=ABCMeta):
         super().tearDown()
         for location in self._setup_locations:
             shutil.rmtree(location)
-        docker_client = docker.from_env()
 
         # Nasty OO to avoid multiple-inheritance method invocation ordering problems
         if isinstance(self, TestWithDockerRegistry):
@@ -97,11 +98,10 @@ class TestWithDockerBuildConfiguration(unittest.TestCase, metaclass=ABCMeta):
 
         for identifier in self.images_to_delete:
             try:
-                docker_client.images.remove(identifier)
+                self.docker_client.images.remove(identifier)
             except (ImageNotFound, NullResource):
                 pass
 
-        docker_client.close()
         self.docker_client.close()
 
     def create_docker_setup(self, **kwargs) -> Tuple[str, DockerBuildConfiguration]:

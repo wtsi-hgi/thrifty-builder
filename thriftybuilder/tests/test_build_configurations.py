@@ -7,11 +7,10 @@ from thriftybuilder.build_configurations import DockerBuildConfiguration, _ADD_D
     _COPY_DOCKER_COMMAND, DOCKER_IGNORE_FILE
 from thriftybuilder.containers import BuildConfigurationContainer
 from thriftybuilder.tests._common import TestWithDockerBuildConfiguration, TestWithConfiguration, DOCKERFILE_PATH
-from thriftybuilder.tests._examples import EXAMPLE_IMAGE_NAME, EXAMPLE_FROM_IMAGE_NAME, EXAMPLE_FILE_NAME_1
+from thriftybuilder.tests._examples import EXAMPLE_IMAGE_NAME, EXAMPLE_FROM_IMAGE_NAME, EXAMPLE_FILE_NAME_1, \
+    EXAMPLE_TAG_1, EXAMPLE_TAG_2, EXAMPLE_TAG_3, EXAMPLE_IMAGE_NAME_1, EXAMPLE_IMAGE_NAME_2
 from thriftybuilder.configuration import Configuration, read_configuration
 
-_EXAMPLE_TAG_1 = "example-tag-1"
-_EXAMPLE_TAG_2 = "example-tag-2"
 
 class TestBuildConfigurationContainer(TestWithDockerBuildConfiguration):
     """
@@ -76,7 +75,7 @@ class TestBuildConfigurationContainer(TestWithDockerBuildConfiguration):
         self.assertEqual(0, len(self.container))
 
 
-class TestDockerBuildConfiguration(TestWithDockerBuildConfiguration):
+class TestDockerBuildConfiguration(TestWithDockerBuildConfiguration, TestWithConfiguration):
     """
     Tests for `DockerBuildConfiguration`.
     """
@@ -179,29 +178,30 @@ class TestDockerBuildConfiguration(TestWithDockerBuildConfiguration):
         self.assertSetEqual(set(tags + [other_tag]), configuration.tags)
 
     def test_default_tag(self):
-        default_tag = "latest"  # FIXME maybe not hard code this value?
         _, configuration = self.create_docker_setup(image_name=f"{EXAMPLE_IMAGE_NAME}")
-        self.assertEqual(1, len(configuration.tags))
-        self.assertEqual(default_tag, list(configuration.tags)[0])
+        self.assertEqual({DockerBuildConfiguration.DEFAULT_IMAGE_TAG}, configuration.tags)
 
-class TestDockerBuildConfigurationWithConfiguration(TestWithDockerBuildConfiguration, TestWithConfiguration):
     def test_full_docker_build_configuration(self):
         context_location, conf = self.create_docker_setup()
-        docker_build_config = DockerBuildConfiguration(image_name="example-image-name", dockerfile_location=conf.dockerfile_location, context=context_location, tags=["{{ env['EXAMPLE_TAG_1'] }}","{{ env['EXAMPLE_TAG_2'] }}","example-non-templated-tag"], always_upload=True)
-        configuration = Configuration(docker_build_configurations=BuildConfigurationContainer[DockerBuildConfiguration]([docker_build_config,]))
+        docker_build_config = DockerBuildConfiguration(
+            image_name=EXAMPLE_IMAGE_NAME, dockerfile_location=conf.dockerfile_location, context=context_location,
+            tags=["{{ env['EXAMPLE_TAG_1'] }}","{{ env['EXAMPLE_TAG_2'] }}", EXAMPLE_TAG_3],
+            always_upload=True)
+        configuration = Configuration(
+            docker_build_configurations=BuildConfigurationContainer[DockerBuildConfiguration]([docker_build_config, ]))
         configuration_location = self.configuration_to_file(configuration)
 
-        os.environ["EXAMPLE_TAG_1"] = _EXAMPLE_TAG_1
-        os.environ["EXAMPLE_TAG_2"] = _EXAMPLE_TAG_2
+        os.environ["EXAMPLE_TAG_1"] = EXAMPLE_TAG_1
+        os.environ["EXAMPLE_TAG_2"] = EXAMPLE_TAG_2
 
         configuration = read_configuration(configuration_location)
         self.assertEqual(1, len(configuration.docker_build_configurations))
         docker_build_config = list(configuration.docker_build_configurations)[0]
-        self.assertEqual("example-image-name", docker_build_config.name)
-        self.assertEqual("example-image-name", docker_build_config.identifier)
+        self.assertEqual(EXAMPLE_IMAGE_NAME, docker_build_config.name)
+        self.assertEqual(EXAMPLE_IMAGE_NAME, docker_build_config.identifier)
         self.assertEqual(conf.dockerfile_location, docker_build_config.dockerfile_location)
         self.assertEqual(context_location, docker_build_config.context)
-        self.assertSetEqual(set([_EXAMPLE_TAG_1, _EXAMPLE_TAG_2, "example-non-templated-tag"]), docker_build_config.tags)
+        self.assertSetEqual({EXAMPLE_TAG_1, EXAMPLE_TAG_2, EXAMPLE_TAG_3}, docker_build_config.tags)
         self.assertTrue(docker_build_config.always_upload)
 
     def test_full_docker_build_configuration_from_string(self):
@@ -216,41 +216,41 @@ class TestDockerBuildConfigurationWithConfiguration(TestWithDockerBuildConfigura
                   - "always_upload": true
                     "context": "{context_location_1}"
                     "dockerfile": "{conf_1.dockerfile_location}"
-                    "name": "example-image-name-1"
+                    "name": "{EXAMPLE_IMAGE_NAME_1}"
                     "tags":
-                      - "example-non-templated-tag"
+                      - "{EXAMPLE_TAG_3}"
                       - "{{{{ env['EXAMPLE_TAG_1'] }}}}"
                   - "always_upload": false
                     "context": "{context_location_2}"
                     "dockerfile": "{conf_2.dockerfile_location}"
-                    "name": "example-image-name-2"
+                    "name": "{EXAMPLE_IMAGE_NAME_2}"
                     "tags":
                       - "{{{{ env['EXAMPLE_TAG_2'] }}}}"
-                      - "example-non-templated-tag"
+                      - "{EXAMPLE_TAG_3}"
               "registries": []
             """.encode())
             configuration_location = config_file.name
             config_file.close()
 
-            os.environ["EXAMPLE_TAG_1"] = _EXAMPLE_TAG_1
-            os.environ["EXAMPLE_TAG_2"] = _EXAMPLE_TAG_2
+            os.environ["EXAMPLE_TAG_1"] = EXAMPLE_TAG_1
+            os.environ["EXAMPLE_TAG_2"] = EXAMPLE_TAG_2
 
             configuration = read_configuration(configuration_location)
             self.assertEqual(2, len(configuration.docker_build_configurations))
-            docker_build_config_1 = configuration.docker_build_configurations.get("example-image-name-1")
-            self.assertEqual("example-image-name-1", docker_build_config_1.name)
-            self.assertEqual("example-image-name-1", docker_build_config_1.identifier)
+            docker_build_config_1 = configuration.docker_build_configurations.get(EXAMPLE_IMAGE_NAME_1)
+            self.assertEqual(EXAMPLE_IMAGE_NAME_1, docker_build_config_1.name)
+            self.assertEqual(EXAMPLE_IMAGE_NAME_1, docker_build_config_1.identifier)
             self.assertEqual(conf_1.dockerfile_location, docker_build_config_1.dockerfile_location)
             self.assertEqual(context_location_1, docker_build_config_1.context)
-            self.assertSetEqual(set([_EXAMPLE_TAG_1, "example-non-templated-tag"]), docker_build_config_1.tags)
+            self.assertEqual({EXAMPLE_TAG_1, EXAMPLE_TAG_3}, docker_build_config_1.tags)
             self.assertTrue(docker_build_config_1.always_upload)
 
-            docker_build_config_2 = configuration.docker_build_configurations.get("example-image-name-2")
-            self.assertEqual("example-image-name-2", docker_build_config_2.name)
-            self.assertEqual("example-image-name-2", docker_build_config_2.identifier)
+            docker_build_config_2 = configuration.docker_build_configurations.get(EXAMPLE_IMAGE_NAME_2)
+            self.assertEqual(EXAMPLE_IMAGE_NAME_2, docker_build_config_2.name)
+            self.assertEqual(EXAMPLE_IMAGE_NAME_2, docker_build_config_2.identifier)
             self.assertEqual(conf_2.dockerfile_location, docker_build_config_2.dockerfile_location)
             self.assertEqual(context_location_2, docker_build_config_2.context)
-            self.assertSetEqual(set([_EXAMPLE_TAG_2, "example-non-templated-tag"]), docker_build_config_2.tags)
+            self.assertEqual({EXAMPLE_TAG_2, EXAMPLE_TAG_3}, docker_build_config_2.tags)
             self.assertFalse(docker_build_config_2.always_upload)
 
 

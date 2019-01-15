@@ -70,6 +70,7 @@ class _TestBuildArtifactUploader(Generic[BuildConfigurationType], unittest.TestC
         self.uploader.upload(self.configuration)
         self.assertUploaded(self.configuration)
 
+
 class TestDockerUploader(_TestBuildArtifactUploader[DockerBuildConfiguration], TestWithDockerBuildConfiguration,
                          TestWithDockerRegistry):
     """
