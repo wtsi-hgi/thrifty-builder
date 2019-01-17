@@ -70,6 +70,7 @@ class _TestBuildArtifactUploader(Generic[BuildConfigurationType], unittest.TestC
         self.uploader.upload(self.configuration)
         self.assertUploaded(self.configuration)
 
+
 class TestDockerUploader(_TestBuildArtifactUploader[DockerBuildConfiguration], TestWithDockerBuildConfiguration,
                          TestWithDockerRegistry):
     """
@@ -99,18 +100,21 @@ class TestDockerUploader(_TestBuildArtifactUploader[DockerBuildConfiguration], T
         configuration = self.create_built_configuration(dict(image_name=f"{name_generator()}:version"))
         self.uploader.upload(configuration)
         self.assertUploaded(configuration)
+        self.is_uploaded(configuration)
 
     def test_upload_tagged(self):
         configuration = self.create_built_configuration(dict(image_name=f"{name_generator()}",
                                                              tags=["version"]))
         self.uploader.upload(configuration)
         self.assertUploaded(configuration)
+        self.is_uploaded(configuration)
 
     def test_upload_with_multiple_tags(self):
         configuration = self.create_built_configuration(dict(image_name=f"{name_generator()}",
                                                              tags=["version", "latest"]))
         self.uploader.upload(configuration)
         self.assertUploaded(configuration)
+        self.is_uploaded(configuration)
 
     def test_upload_not_tagged(self):
         configuration = self.create_built_configuration(dict(image_name=name_generator()))

@@ -22,6 +22,10 @@ EXAMPLE_2_CHECKSUM = "f9f601085a99e4e1531bdad52771084b"
 EXAMPLE_1_CONSUL_KEY = "example-key-1"
 EXAMPLE_2_CONSUL_KEY = "example-key-2"
 
+EXAMPLE_TAG_1 = "example-tag-1"
+EXAMPLE_TAG_2 = "example-tag-2"
+EXAMPLE_TAG_3 = "example-tag-3"
+
 
 def name_generator(identifier: str= "") -> str:
     """

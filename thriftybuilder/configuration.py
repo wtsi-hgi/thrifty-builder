@@ -18,6 +18,8 @@ DOCKER_IMAGES_PROPERTY = "images"
 DOCKER_IMAGE_NAME_PROPERTY = "name"
 DOCKER_IMAGE_DOCKERFILE_PROPERTY = "dockerfile"
 DOCKER_IMAGE_CONTEXT_PROPERTY = "context"
+DOCKER_IMAGE_TAGS_PROPERTY = "tags"
+DOCKER_IMAGE_ALWAYS_UPLOAD_PROPERTY = "always_upload"
 
 DOCKER_REGISTRIES_PROPERTY = "registries"
 DOCKER_REGISTRY_URL = "url"
@@ -181,7 +183,9 @@ _docker_build_configuration_mappings = [
                         object_constructor_parameter_name="image_name",
                         object_property_getter=lambda obj: obj.identifier),
     JsonPropertyMapping(DOCKER_IMAGE_DOCKERFILE_PROPERTY, "dockerfile_location", "dockerfile_location"),
-    JsonPropertyMapping(DOCKER_IMAGE_CONTEXT_PROPERTY, "context", "context", optional=True)
+    JsonPropertyMapping(DOCKER_IMAGE_CONTEXT_PROPERTY, "context", "context", optional=True),
+    JsonPropertyMapping(DOCKER_IMAGE_TAGS_PROPERTY, "tags", "tags", optional=True, collection_factory=set),
+    JsonPropertyMapping(DOCKER_IMAGE_ALWAYS_UPLOAD_PROPERTY, "always_upload", "always_upload", optional=True)
 ]
 DockerBuildConfigurationJSONEncoder = MappingJSONEncoderClassBuilder(
     DockerBuildConfiguration, _docker_build_configuration_mappings).build()

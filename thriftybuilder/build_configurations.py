@@ -77,7 +77,7 @@ class DockerBuildConfiguration(BuildConfiguration):
         if len(self._tags) > 0:
             return self._tags
         else:
-            return set(DockerBuildConfiguration.DEFAULT_IMAGE_TAG)
+            return {DockerBuildConfiguration.DEFAULT_IMAGE_TAG}
 
     @property
     def requires(self) -> List[str]:
