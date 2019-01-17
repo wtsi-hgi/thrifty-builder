@@ -56,8 +56,6 @@ class BuildArtifactUploader(Generic[BuildConfigurationType], metaclass=ABCMeta):
         Uploads the artifacts generated when the given configuration is built.
         :param build_configuration: the configuration that has been built
         """
-        import logging
-        logging.basicConfig(level=logging.DEBUG)
         self._upload(build_configuration)
         checksum = self.checksum_calculator.calculate_checksum(build_configuration)
         self.checksum_storage.set_checksum(build_configuration.identifier, checksum)
