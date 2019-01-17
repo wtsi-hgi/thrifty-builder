@@ -152,7 +152,7 @@ class ConsulChecksumStorage(ChecksumStorage):
     CONSUL_SESSION_LOCK_DEFAULT_TIMEOUT = 120
     TEXT_ENCODING = "utf-8"
     _IMPORT_MISSING_ERROR_MESSAGE = "To use Consul storage, please install the requirements in " \
-                                    "`consul-requirements.txt`"
+                                    "`consul_requirements.txt`"
 
     @staticmethod
     def _load_consul_class() -> Type:

@@ -12,7 +12,7 @@ before_install:
 install:
   - pip --disable-pip-version-check install -U -r test_requirements.txt
   - pip --disable-pip-version-check install -U -r requirements.txt
-  - pip --disable-pip-version-check install -U -r consul-requirements.txt
+  - pip --disable-pip-version-check install -U -r consul_requirements.txt
 
 script:
   - ./run-tests.sh

@@ -30,7 +30,7 @@ WORKDIR "${INSTALL_DIRECTORY}"
 ADD . .
 
 RUN python setup.py install
-RUN pip install -r consul-requirements.txt
+RUN pip install -r consul_requirements.txt
 
 WORKDIR "/root"
 ENTRYPOINT ["thrifty"]

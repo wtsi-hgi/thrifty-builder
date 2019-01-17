@@ -36,8 +36,8 @@ RUN pip --disable-pip-version-check install -U -r test_requirements.txt
 ADD requirements.txt .
 RUN pip --disable-pip-version-check install -U -r requirements.txt
 
-ADD consul-requirements.txt .
-RUN pip --disable-pip-version-check install -U -r consul-requirements.txt
+ADD consul_requirements.txt .
+RUN pip --disable-pip-version-check install -U -r consul_requirements.txt
 
 ENV MOUNT_DIRECTORY=/thrifty
 WORKDIR "${MOUNT_DIRECTORY}"

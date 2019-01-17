@@ -126,7 +126,7 @@ Install the tool's dependencies and the dependencies needed for testing:
 ```bash
 pip install -U -r test_requirements.txt
 pip install -U -r requirements.txt
-pip install -U -r consul-requirements.txt
+pip install -U -r consul_requirements.txt
 ```
 
 ### Testing
