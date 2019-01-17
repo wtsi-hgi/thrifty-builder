@@ -6,6 +6,8 @@ from typing import List, NamedTuple, Dict, Optional
 import docker
 from docker.errors import APIError
 
+from thriftybuilder._external.verbosity_argument_parser import verbosity_parser_configuration, VERBOSE_PARAMETER_KEY, \
+    get_verbosity
 from thriftybuilder._logging import create_logger
 from thriftybuilder.builders import DockerBuilder
 from thriftybuilder.common import ThriftyBuilderBaseError
@@ -14,7 +16,7 @@ from thriftybuilder.meta import DESCRIPTION, VERSION, PACKAGE_NAME, EXECUTABLE_N
 from thriftybuilder.storage import MemoryChecksumStorage
 from thriftybuilder.uploader import DockerUploader
 
-VERBOSE_SHORT_PARAMETER = "v"
+VERBOSITY_SHORT_PARAMETER = verbosity_parser_configuration[VERBOSE_PARAMETER_KEY]
 OUTPUT_BUILT_ONLY_LONG_PARAMETER = "built-only"
 CONFIGURATION_LOCATION_PARAMETER = "configuration-location"
 
@@ -51,27 +53,13 @@ def _create_parser() -> ArgumentParser:
     :return: the argument parser
     """
     parser = ArgumentParser(prog=EXECUTABLE_NAME, description=f"{DESCRIPTION} (v{VERSION})")
-    parser.add_argument(f"-{VERBOSE_SHORT_PARAMETER}", action="count", default=0,
+    parser.add_argument(f"-{VERBOSITY_SHORT_PARAMETER}", action="count", default=0,
                         help="increase the level of log verbosity (add multiple increase further)")
     parser.add_argument(f"--{OUTPUT_BUILT_ONLY_LONG_PARAMETER}", action="store_true", default=DEFAULT_BUILT_ONLY,
                         help="only print details about newly built images on stdout")
     parser.add_argument(CONFIGURATION_LOCATION_PARAMETER, type=str,
                         help="location of configuration")
     return parser
-
-
-# XXX: This has been stolen from `consul-lock` - code duplication++
-def _get_verbosity(parsed_arguments: Dict) -> int:
-    """
-    Gets the verbosity level from the parsed arguments.
-    :param parsed_arguments: the parsed arguments
-    :return: the verbosity level implied
-    """
-    verbosity = DEFAULT_LOG_VERBOSITY - (int(parsed_arguments.get(VERBOSE_SHORT_PARAMETER)) * 10)
-    if verbosity < 10:
-        raise InvalidCliArgumentError("Cannot provide any further logging - reduce log verbosity")
-    assert verbosity <= logging.CRITICAL
-    return verbosity
 
 
 def parse_cli_configuration(arguments: List[str]) -> CliConfiguration:
@@ -81,7 +69,7 @@ def parse_cli_configuration(arguments: List[str]) -> CliConfiguration:
     :return: parsed configuration
     """
     parsed_arguments = {x.replace("_", "-"): y for x, y in vars(_create_parser().parse_args(arguments)).items()}
-    return CliConfiguration(log_verbosity=_get_verbosity(parsed_arguments),
+    return CliConfiguration(log_verbosity=get_verbosity(parsed_arguments),
                             output_built_only=parsed_arguments.get(
                                 OUTPUT_BUILT_ONLY_LONG_PARAMETER, DEFAULT_BUILT_ONLY),
                             configuration_location=parsed_arguments[CONFIGURATION_LOCATION_PARAMETER])

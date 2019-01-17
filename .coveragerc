@@ -3,4 +3,6 @@ branch = True
 source = .
 omit =
     thriftybuilder/tests/*
+    thriftybuilder/_external/*
+    subrepos/*
 parallel = True
