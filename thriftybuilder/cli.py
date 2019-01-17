@@ -1,10 +1,11 @@
 import json
 import logging
 import sys
-from argparse import ArgumentParser
-from typing import List, NamedTuple, Dict, Optional
+
 import docker
+from argparse import ArgumentParser
 from docker.errors import APIError
+from typing import List, NamedTuple, Dict, Optional
 
 from thriftybuilder._external.verbosity_argument_parser import verbosity_parser_configuration, VERBOSE_PARAMETER_KEY, \
     get_verbosity

@@ -39,8 +39,9 @@ class _TestChecksumStorage(unittest.TestCase, metaclass=ABCMeta):
     def test_get_all_checksums(self):
         self.storage.set_checksum(EXAMPLE_1_CONFIGURATION_ID, EXAMPLE_1_CHECKSUM)
         self.storage.set_checksum(EXAMPLE_2_CONFIGURATION_ID, EXAMPLE_2_CHECKSUM)
-        self.assertEqual({EXAMPLE_1_CONFIGURATION_ID: EXAMPLE_1_CHECKSUM, EXAMPLE_2_CONFIGURATION_ID: EXAMPLE_2_CHECKSUM},
-                         self.storage.get_all_checksums())
+        self.assertEqual(
+            {EXAMPLE_1_CONFIGURATION_ID: EXAMPLE_1_CHECKSUM, EXAMPLE_2_CONFIGURATION_ID: EXAMPLE_2_CHECKSUM},
+            self.storage.get_all_checksums())
 
     def test_set_when_not_set(self):
         self.storage.set_checksum(EXAMPLE_1_CONFIGURATION_ID, EXAMPLE_1_CHECKSUM)

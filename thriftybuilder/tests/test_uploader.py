@@ -1,10 +1,11 @@
 import unittest
 from abc import ABCMeta, abstractmethod
+
 from typing import Generic, Dict
 
+from thriftybuilder.build_configurations import BuildConfigurationType, DockerBuildConfiguration
 from thriftybuilder.builders import DockerBuilder
 from thriftybuilder.checksums import ChecksumCalculator, DockerChecksumCalculator
-from thriftybuilder.build_configurations import BuildConfigurationType, DockerBuildConfiguration
 from thriftybuilder.configuration import DockerRegistry
 from thriftybuilder.storage import MemoryChecksumStorage
 from thriftybuilder.tests._common import TestWithDockerBuildConfiguration, TestWithDockerRegistry

@@ -1,15 +1,15 @@
 import os
-import unittest
 import tempfile
+import unittest
 
-from thriftybuilder.meta import PACKAGE_NAME
 from thriftybuilder.build_configurations import DockerBuildConfiguration, _ADD_DOCKER_COMMAND, \
     _COPY_DOCKER_COMMAND, DOCKER_IGNORE_FILE
+from thriftybuilder.configuration import Configuration, read_configuration
 from thriftybuilder.containers import BuildConfigurationContainer
+from thriftybuilder.meta import PACKAGE_NAME
 from thriftybuilder.tests._common import TestWithDockerBuildConfiguration, TestWithConfiguration, DOCKERFILE_PATH
 from thriftybuilder.tests._examples import EXAMPLE_IMAGE_NAME, EXAMPLE_FROM_IMAGE_NAME, EXAMPLE_FILE_NAME_1, \
     EXAMPLE_TAG_1, EXAMPLE_TAG_2, EXAMPLE_TAG_3, EXAMPLE_IMAGE_NAME_1, EXAMPLE_IMAGE_NAME_2
-from thriftybuilder.configuration import Configuration, read_configuration
 
 
 class TestBuildConfigurationContainer(TestWithDockerBuildConfiguration):
@@ -185,7 +185,7 @@ class TestDockerBuildConfiguration(TestWithDockerBuildConfiguration, TestWithCon
         context_location, conf = self.create_docker_setup()
         docker_build_config = DockerBuildConfiguration(
             image_name=EXAMPLE_IMAGE_NAME, dockerfile_location=conf.dockerfile_location, context=context_location,
-            tags=["{{ env['EXAMPLE_TAG_1'] }}","{{ env['EXAMPLE_TAG_2'] }}", EXAMPLE_TAG_3],
+            tags=["{{ env['EXAMPLE_TAG_1'] }}", "{{ env['EXAMPLE_TAG_2'] }}", EXAMPLE_TAG_3],
             always_upload=True)
         configuration = Configuration(
             docker_build_configurations=BuildConfigurationContainer[DockerBuildConfiguration]([docker_build_config, ]))
@@ -252,7 +252,6 @@ class TestDockerBuildConfiguration(TestWithDockerBuildConfiguration, TestWithCon
             self.assertEqual(context_location_2, docker_build_config_2.context)
             self.assertEqual({EXAMPLE_TAG_2, EXAMPLE_TAG_3}, docker_build_config_2.tags)
             self.assertFalse(docker_build_config_2.always_upload)
-
 
 
 if __name__ == "__main__":

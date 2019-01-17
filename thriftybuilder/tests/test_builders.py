@@ -1,5 +1,6 @@
-import itertools
 import unittest
+
+import itertools
 
 from thriftybuilder.builders import DockerBuilder, CircularDependencyBuildError, UnmanagedBuildError, \
     InvalidDockerfileBuildError, BuildStepError

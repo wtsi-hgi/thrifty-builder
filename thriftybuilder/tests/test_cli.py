@@ -1,9 +1,9 @@
 import json
 import unittest
 from tempfile import NamedTemporaryFile
-from typing import Tuple
 
 from capturewrap import CaptureWrapBuilder
+from typing import Tuple
 
 from thriftybuilder.build_configurations import DockerBuildConfiguration
 from thriftybuilder.builders import DockerBuilder

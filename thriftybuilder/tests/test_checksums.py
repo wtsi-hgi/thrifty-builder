@@ -1,8 +1,9 @@
 import unittest
+
 from typing import Iterable
 
-from thriftybuilder.checksums import DockerChecksumCalculator
 from thriftybuilder.build_configurations import DockerBuildConfiguration
+from thriftybuilder.checksums import DockerChecksumCalculator
 from thriftybuilder.containers import BuildConfigurationContainer
 from thriftybuilder.tests._common import COPY_DOCKER_COMMAND, ADD_DOCKER_COMMAND, RUN_DOCKER_COMMAND
 from thriftybuilder.tests._common import TestWithDockerBuildConfiguration
@@ -21,7 +22,7 @@ class TestDockerChecksumCalculator(TestWithDockerBuildConfiguration):
     def test_calculate_checksum_with_configurations(self):
         configurations = [
             self.create_docker_setup()[1],
-            self.create_docker_setup(commands=(EXAMPLE_RUN_COMMAND))[1],
+            self.create_docker_setup(commands=(EXAMPLE_RUN_COMMAND, ))[1],
             self.create_docker_setup(commands=(EXAMPLE_RUN_COMMAND, EXAMPLE_RUN_COMMAND))[1],
         ]
         self._assert_different_checksums(configurations)

@@ -1,8 +1,8 @@
 import json
 from abc import abstractmethod, ABCMeta
-from typing import Generic
 
 import docker
+from typing import Generic
 
 from thriftybuilder._logging import create_logger
 from thriftybuilder.build_configurations import BuildConfigurationType, DockerBuildConfiguration
@@ -111,4 +111,3 @@ class DockerUploader(BuildArtifactUploader[DockerBuildConfiguration]):
                                 raise ImageNotFoundError(build_configuration.name, tag)
                             else:
                                 raise UploadError(parsed_sub_line["error"])
-

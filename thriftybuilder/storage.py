@@ -2,8 +2,9 @@ import json
 import os
 from abc import ABCMeta, abstractmethod
 from copy import copy
-from typing import Optional, Dict, Mapping, Type
 from urllib.parse import urlparse
+
+from typing import Optional, Dict, Mapping, Type
 
 from thriftybuilder.common import MissingOptionalDependencyError
 
@@ -41,6 +42,7 @@ class ChecksumStorage(ChecksumRetriever, metaclass=ABCMeta):
         """
 
     def __init__(self, configuration_checksum_mappings: Mapping[str, str]=None):
+        super().__init__()
         if configuration_checksum_mappings is not None:
             self.set_all_checksums(configuration_checksum_mappings)
 
@@ -187,7 +189,7 @@ class ConsulChecksumStorage(ChecksumStorage):
         return self._consul_client.token
 
     def __init__(self, data_key: str, lock_key: str, url: str=None, token: str=None, consul_client=None,
-                 configuration_checksum_mappings: Mapping[str, str] = None):
+                 configuration_checksum_mappings: Mapping[str, str]=None):
         Consul = ConsulChecksumStorage._load_consul_class()
         ConsulLockManager = ConsulChecksumStorage._load_consul_lock_manager()
 

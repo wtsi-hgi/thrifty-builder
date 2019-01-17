@@ -1,12 +1,12 @@
 import json
-import re
-from json import JSONEncoder, JSONDecoder
-from typing import Iterable, Dict, Callable
-
 import os
+from json import JSONEncoder, JSONDecoder
+
+import re
 import yaml
 from hgijson import JsonPropertyMapping, MappingJSONEncoderClassBuilder, MappingJSONDecoderClassBuilder
 from jinja2 import Template
+from typing import Iterable, Callable
 
 from thriftybuilder.build_configurations import DockerBuildConfiguration
 from thriftybuilder.containers import BuildConfigurationContainer

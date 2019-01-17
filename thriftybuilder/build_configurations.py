@@ -1,13 +1,14 @@
 import dockerfile
 import os
 from abc import ABCMeta, abstractmethod
+from dockerfile import Command
 from glob import glob
 from os import walk
-from typing import Iterable, Optional, List, Set, TypeVar, Generic
 
+from typing import Iterable, Optional, List, Set, TypeVar, Generic, Tuple
 from zgitignore import ZgitIgnore
 
-from thriftybuilder.common import ThriftyBuilderBaseError
+from thriftybuilder.common import ThriftyBuilderBaseError, DEFAULT_ENCODING
 
 DOCKER_IGNORE_FILE = ".dockerignore"
 _FROM_DOCKER_COMMAND = "from"
@@ -129,6 +130,11 @@ class DockerBuildConfiguration(BuildConfiguration):
     def context(self) -> str:
         return self._context
 
+    @property
+    def commands(self) -> List[str]:
+        assert self._commands is not None
+        return [command.original.encode(DEFAULT_ENCODING) for command in self._commands]
+
     @dockerfile_location.setter
     def dockerfile_location(self, location: str):
         location = os.path.expanduser(location)
@@ -144,7 +150,8 @@ class DockerBuildConfiguration(BuildConfiguration):
             raise ValueError("context must be an absolute path")
         self._context = context
 
-    def __init__(self, image_name: str, dockerfile_location: str, context: str=None, tags: Iterable[str]=None, always_upload: bool=False):
+    def __init__(self, image_name: str, dockerfile_location: str, context: str=None, tags: Iterable[str]=None,
+                 always_upload: bool=False):
         """
         Constructor.
         :param image_name: name of the image built by this configuration (becomes its identifier)
@@ -152,12 +159,13 @@ class DockerBuildConfiguration(BuildConfiguration):
         :param context: context in which the image is built
         :param tags: strings to tag the built image with
         """
+        super().__init__()
         if not isinstance(image_name, str):
             raise ValueError(f"`image_name` must be a string - {type(image_name)} given")
 
         self._dockerfile_location = None
         self._context = None
-        self._commands = None
+        self._commands: Tuple[Command] = None
 
         self._identifier = image_name
         self.dockerfile_location = dockerfile_location

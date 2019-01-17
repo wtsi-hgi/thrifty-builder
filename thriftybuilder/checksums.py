@@ -1,13 +1,13 @@
 import os
 from abc import ABCMeta, abstractmethod
-from typing import Generic, Callable
 
 from checksumdir import dirhash
+from typing import Generic, Callable
 
-from thriftybuilder.common import DEFAULT_ENCODING
-from thriftybuilder.hashers import Hasher, Md5Hasher
 from thriftybuilder.build_configurations import DockerBuildConfiguration, BuildConfigurationType, \
     BuildConfigurationManager
+from thriftybuilder.common import DEFAULT_ENCODING
+from thriftybuilder.hashers import Hasher, Md5Hasher
 
 
 class ChecksumCalculator(Generic[BuildConfigurationType], metaclass=ABCMeta):
@@ -67,8 +67,8 @@ class DockerChecksumCalculator(
         :return: the calculated checksum
         """
         hasher = self.hasher_generator()
-        for command in build_configuration._commands:
-            hasher.update(command.original.encode(DEFAULT_ENCODING))
+        for command in build_configuration.commands:
+            hasher.update(command)
         return hasher.generate()
 
     # TODO: Should probably go into superclass

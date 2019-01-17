@@ -27,7 +27,7 @@ EXAMPLE_TAG_2 = "example-tag-2"
 EXAMPLE_TAG_3 = "example-tag-3"
 
 
-def name_generator(identifier: str= "") -> str:
+def name_generator(identifier: str="") -> str:
     """
     Generates a unique name.
     :param identifier: identifier to add to the name

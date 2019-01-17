@@ -1,9 +1,9 @@
 from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
-from typing import Generic, TypeVar, Iterable, Set, Dict, Callable, Optional
 
 from docker import APIClient
 from docker.errors import APIError
+from typing import Generic, TypeVar, Iterable, Set, Dict, Callable, Optional
 
 from thriftybuilder._logging import create_logger
 from thriftybuilder.build_configurations import DockerBuildConfiguration, BuildConfigurationType, \

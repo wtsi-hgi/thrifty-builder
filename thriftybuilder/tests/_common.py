@@ -3,16 +3,17 @@ import os
 import unittest
 from abc import ABCMeta
 from tempfile import mkdtemp, NamedTemporaryFile
-from typing import List, Dict, Optional, Tuple, Iterable
 
 import docker
 import shutil
 import yaml
 from consul import Consul
 from docker.errors import ImageNotFound, NullResource, NotFound
+from typing import List, Dict, Optional, Tuple, Iterable
 from useintest.modules.consul import ConsulServiceController, ConsulDockerisedService
 from useintest.services.builders import DockerisedServiceControllerTypeBuilder
 from useintest.services.models import DockerisedService
+from uuid import uuid4
 
 from thriftybuilder.build_configurations import DockerBuildConfiguration
 from thriftybuilder.configuration import ConfigurationJSONEncoder, Configuration
@@ -23,9 +24,9 @@ RUN_DOCKER_COMMAND = "RUN"
 ADD_DOCKER_COMMAND = "ADD"
 COPY_DOCKER_COMMAND = "COPY"
 
-_RANDOM_NAME = object()
+_RANDOM_NAME = str(uuid4())
 
-# To avoid a nasty circular dependency, DO NOT move this import up
+# To avoid a nasty circular dependency, DO NOT move this import up above the constants
 from thriftybuilder.tests._examples import name_generator, EXAMPLE_FROM_IMAGE_NAME
 
 
@@ -39,6 +40,7 @@ def create_docker_setup(
     :param context_files: dictionary where the key is the name of the context file and the value is its content
     :param image_name: name of the image to setup a build configuration for
     :param tags: list of strings to tag the built image with
+    :param always_upload: always upload the docker image, even if it has not just been built
     :param from_image_name: the image that the setup one is based off (FROM added to commands if not `None`)
     :return: tuple where the first element is the directory that acts as the context and the second is the associated
     build configuration
@@ -196,6 +198,7 @@ class TestWithDockerRegistry(unittest.TestCase, metaclass=ABCMeta):
             return True
         finally:
             docker_client.close()
+
 
 class TestWithConfiguration(unittest.TestCase, metaclass=ABCMeta):
     """
