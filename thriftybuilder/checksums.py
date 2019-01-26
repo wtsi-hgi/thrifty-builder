@@ -47,7 +47,7 @@ class ChecksumCalculator(Generic[BuildConfigurationType], BuildConfigurationMana
             else:
                 with open(file_path, "rb") as file:
                     hasher.update(file.read())
-                hasher.update(str(os.stat(file_path).st_mode & 0o777))
+            hasher.update(str(os.stat(file_path).st_mode & 0o777))
         return hasher.generate()
 
     def calculate_dependency_checksum(self, build_configuration: BuildConfigurationType) -> str:

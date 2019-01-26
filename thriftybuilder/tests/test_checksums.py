@@ -105,14 +105,24 @@ class TestDockerChecksumCalculator(TestWithDockerBuildConfiguration):
         add_file_1_command = f"{ADD_DOCKER_COMMAND} {EXAMPLE_FILE_NAME_1} files_1"
         copy_file_2_command = f"{COPY_DOCKER_COMMAND} {EXAMPLE_FILE_NAME_2} files_2"
 
-        docker_directory, configuration = self.create_docker_setup(
+        context_directory, configuration = self.create_docker_setup(
             commands=(add_file_1_command, copy_file_2_command),
             context_files={EXAMPLE_FILE_NAME_1: EXAMPLE_FILE_CONTENTS_1, EXAMPLE_FILE_NAME_2: EXAMPLE_FILE_NAME_2})
         original_checksum = self.checksum_calculator.calculate_checksum(configuration)
 
-        os.chmod(os.path.join(docker_directory, EXAMPLE_FILE_NAME_1), 0o444)
+        os.chmod(os.path.join(context_directory, EXAMPLE_FILE_NAME_1), 0o444)
         self.assertNotEqual(original_checksum, self.checksum_calculator.calculate_checksum(configuration))
-        os.chmod(os.path.join(docker_directory, EXAMPLE_FILE_NAME_1), 0o774)
+        os.chmod(os.path.join(context_directory, EXAMPLE_FILE_NAME_1), 0o774)
+        self.assertNotEqual(original_checksum, self.checksum_calculator.calculate_checksum(configuration))
+
+    def test_calculate_checksum_considers_directory_permissions(self):
+        add_file_1_command = f"{ADD_DOCKER_COMMAND} {EXAMPLE_FILE_NAME_1} files_1"
+
+        context_directory, configuration = self.create_docker_setup(commands=(add_file_1_command, ))
+        os.mkdir(os.path.join(context_directory, EXAMPLE_FILE_NAME_1))
+        original_checksum = self.checksum_calculator.calculate_checksum(configuration)
+
+        os.chmod(os.path.join(context_directory, EXAMPLE_FILE_NAME_1), 0o644)
         self.assertNotEqual(original_checksum, self.checksum_calculator.calculate_checksum(configuration))
 
     def _assert_different_checksums(self, configurations: Iterable[DockerBuildConfiguration]):
