@@ -2,7 +2,6 @@ import dockerfile
 import os
 from abc import ABCMeta, abstractmethod
 from dockerfile import Command
-from glob import glob
 from os import walk
 
 from typing import Iterable, Optional, List, Set, TypeVar, Generic, Tuple
@@ -16,6 +15,13 @@ _ADD_DOCKER_COMMAND = "add"
 _RUN_DOCKER_COMMAND = "run"
 _COPY_DOCKER_COMMAND = "copy"
 
+def walk_directory(dirpath):
+    return list(walk_directory_generator(dirpath))
+
+def walk_directory_generator(dirpath):
+    for root, _, files in walk(dirpath):
+        for file in files:
+            yield(os.path.join(root, file))
 
 class InvalidBuildConfigurationError(ThriftyBuilderBaseError):
     """
@@ -103,7 +109,7 @@ class DockerBuildConfiguration(BuildConfiguration):
         for source_path in source_patterns:
             full_source_path = os.path.normpath(os.path.join(self.context, source_path))
             if os.path.isdir(full_source_path):
-                candidate_files = glob(f"{full_source_path}/**/*", recursive=True)
+                candidate_files = walk_directory(full_source_path)
             else:
                 candidate_files = [full_source_path]
 
