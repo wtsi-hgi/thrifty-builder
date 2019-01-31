@@ -23,5 +23,5 @@ def walk_directory(directory_path: str) -> List[str]:
 
 def walk_directory_generator(directory_path: str) -> Iterable[str]:
     for root, directories, files in os.walk(directory_path):
-        for file in files + directories:
-            yield (os.path.join(root, file))
+        for name in files + directories:
+            yield (os.path.join(root, name))
