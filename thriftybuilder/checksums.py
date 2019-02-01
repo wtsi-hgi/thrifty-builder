@@ -47,6 +47,7 @@ class ChecksumCalculator(Generic[BuildConfigurationType], BuildConfigurationMana
             else:
                 with open(file_path, "rb") as file:
                     hasher.update(file.read())
+            hasher.update(str(os.stat(file_path).st_mode & 0o777))
         return hasher.generate()
 
     def calculate_dependency_checksum(self, build_configuration: BuildConfigurationType) -> str:
@@ -64,9 +65,6 @@ class DockerChecksumCalculator(ChecksumCalculator[DockerBuildConfiguration]):
     Docker build checksum calculator.
     """
     def calculate_checksum(self, build_configuration: DockerBuildConfiguration) -> str:
-        """
-        Note: does not consider file metadata when calculating checksum.
-        """
         general_checksum = super().calculate_checksum(build_configuration)
         configuration_checksum = self.calculate_configuration_checksum(build_configuration)
         return self.hasher_generator().update(configuration_checksum).update(general_checksum).generate()
