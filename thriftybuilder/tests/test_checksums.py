@@ -2,6 +2,7 @@ import os
 import shutil
 import unittest
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 from typing import Iterable
 
@@ -139,6 +140,21 @@ class TestDockerChecksumCalculator(TestWithDockerBuildConfiguration):
 
         shutil.move(original_location, os.path.join(directory_location, EXAMPLE_FILE_NAME_3))
         self.assertNotEqual(original_checksum, self.checksum_calculator.calculate_checksum(configuration))
+
+    def test_calculate_no_follow_symlink(self):
+        add_file_1_command = f"{ADD_DOCKER_COMMAND} {EXAMPLE_FILE_NAME_1} dir_1"
+
+        with NamedTemporaryFile("w") as file_outside_context:
+            context_directory, configuration = self.create_docker_setup(commands=(add_file_1_command, ))
+            symlink_location = os.path.join(context_directory, EXAMPLE_FILE_NAME_1)
+            os.symlink(file_outside_context.name, symlink_location)
+
+            original_checksum = self.checksum_calculator.calculate_checksum(configuration)
+
+            file_outside_context.file.write(EXAMPLE_FILE_CONTENTS_1)
+            file_outside_context.file.flush()
+
+            self.assertEqual(original_checksum, self.checksum_calculator.calculate_checksum(configuration))
 
     def _assert_different_checksums(self, configurations: Iterable[DockerBuildConfiguration]):
         """
