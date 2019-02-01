@@ -2,13 +2,12 @@ import dockerfile
 import os
 from abc import ABCMeta, abstractmethod
 from dockerfile import Command
-from glob import glob
 from os import walk
-
 from typing import Iterable, Optional, List, Set, TypeVar, Generic, Tuple
+
 from zgitignore import ZgitIgnore
 
-from thriftybuilder.common import ThriftyBuilderBaseError, DEFAULT_ENCODING
+from thriftybuilder.common import ThriftyBuilderBaseError, DEFAULT_ENCODING, walk_directory
 
 DOCKER_IGNORE_FILE = ".dockerignore"
 _FROM_DOCKER_COMMAND = "from"
@@ -103,7 +102,7 @@ class DockerBuildConfiguration(BuildConfiguration):
         for source_path in source_patterns:
             full_source_path = os.path.normpath(os.path.join(self.context, source_path))
             if os.path.isdir(full_source_path):
-                candidate_files = glob(f"{full_source_path}/**/*", recursive=True)
+                candidate_files = walk_directory(full_source_path)
             else:
                 candidate_files = [full_source_path]
 
@@ -213,6 +212,7 @@ class DockerBuildConfiguration(BuildConfiguration):
                 ignored_files.add(context_file)
 
         return ignored_files
+
 
 
 class BuildConfigurationManager(Generic[BuildConfigurationType], metaclass=ABCMeta):
