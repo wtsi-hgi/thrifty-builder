@@ -1,5 +1,4 @@
 dockerfile>=2.0.0
-checksumdir>=1.1.4
 zgitignore>=0.8.0
 docker>=3.5.0
 pyyaml>=3.12

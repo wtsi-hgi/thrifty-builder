@@ -1,5 +1,7 @@
 import os
+import shutil
 import unittest
+from pathlib import Path
 
 from typing import Iterable
 
@@ -9,7 +11,7 @@ from thriftybuilder.containers import BuildConfigurationContainer
 from thriftybuilder.tests._common import COPY_DOCKER_COMMAND, ADD_DOCKER_COMMAND, RUN_DOCKER_COMMAND
 from thriftybuilder.tests._common import TestWithDockerBuildConfiguration
 from thriftybuilder.tests._examples import EXAMPLE_FILE_NAME_1, EXAMPLE_FILE_CONTENTS_1, \
-    EXAMPLE_FILE_NAME_2, EXAMPLE_FILE_CONTENTS_2, EXAMPLE_RUN_COMMAND, EXAMPLE_IMAGE_NAME
+    EXAMPLE_FILE_NAME_2, EXAMPLE_FILE_CONTENTS_2, EXAMPLE_RUN_COMMAND, EXAMPLE_IMAGE_NAME, EXAMPLE_FILE_NAME_3
 
 
 # TODO: Ideally, tests that apply generically to `ChecksumCalculator` should be split out
@@ -123,6 +125,19 @@ class TestDockerChecksumCalculator(TestWithDockerBuildConfiguration):
         original_checksum = self.checksum_calculator.calculate_checksum(configuration)
 
         os.chmod(os.path.join(context_directory, EXAMPLE_FILE_NAME_1), 0o644)
+        self.assertNotEqual(original_checksum, self.checksum_calculator.calculate_checksum(configuration))
+
+    def test_calculate_checksum_considers_file_names(self):
+        add_file_1_command = f"{ADD_DOCKER_COMMAND} {EXAMPLE_FILE_NAME_1} dir_1"
+
+        context_directory, configuration = self.create_docker_setup(commands=(add_file_1_command, ))
+        directory_location = os.path.join(context_directory, EXAMPLE_FILE_NAME_1)
+        os.mkdir(directory_location)
+        original_location = os.path.join(directory_location, EXAMPLE_FILE_NAME_2)
+        Path(original_location).touch()
+        original_checksum = self.checksum_calculator.calculate_checksum(configuration)
+
+        shutil.move(original_location, os.path.join(directory_location, EXAMPLE_FILE_NAME_3))
         self.assertNotEqual(original_checksum, self.checksum_calculator.calculate_checksum(configuration))
 
     def _assert_different_checksums(self, configurations: Iterable[DockerBuildConfiguration]):
