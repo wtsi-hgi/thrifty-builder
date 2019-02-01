@@ -2,8 +2,6 @@ import os
 from abc import ABCMeta
 from typing import Generic, Callable, Iterable
 
-from checksumdir import dirhash
-
 from thriftybuilder.build_configurations import DockerBuildConfiguration, BuildConfigurationType, \
     BuildConfigurationManager
 from thriftybuilder.common import DEFAULT_ENCODING
@@ -42,11 +40,10 @@ class ChecksumCalculator(Generic[BuildConfigurationType], BuildConfigurationMana
         """
         hasher = self.hasher_generator()
         for file_path in sorted(build_configuration.used_files):
-            if os.path.isdir(file_path):
-                hasher.update(dirhash(file_path).encode(DEFAULT_ENCODING))
-            else:
+            if not os.path.isdir(file_path):
                 with open(file_path, "rb") as file:
                     hasher.update(file.read())
+            hasher.update(os.path.relpath(file_path, build_configuration.context))
             hasher.update(str(os.stat(file_path).st_mode & 0o777))
         return hasher.generate()
 
