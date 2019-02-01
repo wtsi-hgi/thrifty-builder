@@ -40,7 +40,7 @@ class ChecksumCalculator(Generic[BuildConfigurationType], BuildConfigurationMana
         """
         hasher = self.hasher_generator()
         for file_path in sorted(build_configuration.used_files):
-            if not os.path.isdir(file_path):
+            if not os.path.isdir(file_path) and not os.path.islink(file_path):
                 with open(file_path, "rb") as file:
                     hasher.update(file.read())
             hasher.update(os.path.relpath(file_path, build_configuration.context))
