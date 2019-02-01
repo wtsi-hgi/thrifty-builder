@@ -1,3 +1,4 @@
+import os
 import unittest
 
 from typing import Iterable
@@ -88,6 +89,16 @@ class TestDockerChecksumCalculator(TestWithDockerBuildConfiguration):
         calculator = DockerChecksumCalculator(
             managed_build_configurations=BuildConfigurationContainer([configuration]))
         self.assertIsInstance(calculator.calculate_checksum(configuration), str)
+
+    def test_calculate_checksum_considers_empty_directories(self):
+        add_file_1_command = f"{ADD_DOCKER_COMMAND} {EXAMPLE_FILE_NAME_1} dir_1"
+
+        context_directory, configuration = self.create_docker_setup(commands=(add_file_1_command, ))
+        os.mkdir(os.path.join(context_directory, EXAMPLE_FILE_NAME_1))
+        original_checksum = self.checksum_calculator.calculate_checksum(configuration)
+
+        os.mkdir(os.path.join(context_directory, EXAMPLE_FILE_NAME_1, EXAMPLE_FILE_NAME_2))
+        self.assertNotEqual(original_checksum, self.checksum_calculator.calculate_checksum(configuration))
 
     def _assert_different_checksums(self, configurations: Iterable[DockerBuildConfiguration]):
         """

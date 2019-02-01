@@ -101,13 +101,13 @@ class DockerBuildConfiguration(BuildConfiguration):
         source_files: Set[str] = set()
         for source_path in source_patterns:
             full_source_path = os.path.normpath(os.path.join(self.context, source_path))
+            candidate_files = []
             if os.path.isdir(full_source_path):
                 candidate_files = walk_directory(full_source_path)
-            else:
-                candidate_files = [full_source_path]
+            candidate_files.append(full_source_path)
 
             for candidate_file in candidate_files:
-                if os.path.exists(candidate_file) and not os.path.isdir(candidate_file):
+                if os.path.exists(candidate_file):
                     source_files.add(candidate_file)
 
         return set(source_files - self.get_ignored_files())

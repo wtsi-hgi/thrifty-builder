@@ -1,6 +1,8 @@
+import itertools
 import os
 import tempfile
 import unittest
+from pathlib import Path
 
 from thriftybuilder.build_configurations import DockerBuildConfiguration, _ADD_DOCKER_COMMAND, \
     _COPY_DOCKER_COMMAND, DOCKER_IGNORE_FILE
@@ -109,7 +111,9 @@ class TestDockerBuildConfiguration(TestWithDockerBuildConfiguration, TestWithCon
             commands=(f"{_ADD_DOCKER_COMMAND} {directory} /example", ),
             context_files={file_path: None for file_path in example_file_paths})
         used_files = (os.path.relpath(file, start=context_directory) for file in configuration.used_files)
-        self.assertCountEqual(example_file_paths, used_files)
+        # TODO: just generate the expected files by appropriately exploding the example file paths...
+        expected_files = ["test"] + [f"{directory}/{suffix}" for suffix in ["a", "b", "c", "c/d", "c/d/e", "c/d/f"]]
+        self.assertCountEqual(expected_files, used_files)
 
     def test_used_files_when_multiple_add(self):
         example_file_paths = ["a", "b", "c/d"]
