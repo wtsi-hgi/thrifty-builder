@@ -1,4 +1,8 @@
+import os
+import shutil
 import unittest
+from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 from typing import Iterable
 
@@ -8,9 +12,10 @@ from thriftybuilder.containers import BuildConfigurationContainer
 from thriftybuilder.tests._common import COPY_DOCKER_COMMAND, ADD_DOCKER_COMMAND, RUN_DOCKER_COMMAND
 from thriftybuilder.tests._common import TestWithDockerBuildConfiguration
 from thriftybuilder.tests._examples import EXAMPLE_FILE_NAME_1, EXAMPLE_FILE_CONTENTS_1, \
-    EXAMPLE_FILE_NAME_2, EXAMPLE_FILE_CONTENTS_2, EXAMPLE_RUN_COMMAND, EXAMPLE_IMAGE_NAME
+    EXAMPLE_FILE_NAME_2, EXAMPLE_FILE_CONTENTS_2, EXAMPLE_RUN_COMMAND, EXAMPLE_IMAGE_NAME, EXAMPLE_FILE_NAME_3
 
 
+# TODO: Ideally, tests that apply generically to `ChecksumCalculator` should be split out
 class TestDockerChecksumCalculator(TestWithDockerBuildConfiguration):
     """
     Tests for `DockerChecksumCalculator`.
@@ -88,6 +93,68 @@ class TestDockerChecksumCalculator(TestWithDockerBuildConfiguration):
         calculator = DockerChecksumCalculator(
             managed_build_configurations=BuildConfigurationContainer([configuration]))
         self.assertIsInstance(calculator.calculate_checksum(configuration), str)
+
+    def test_calculate_checksum_considers_empty_directories(self):
+        add_file_1_command = f"{ADD_DOCKER_COMMAND} {EXAMPLE_FILE_NAME_1} dir_1"
+
+        context_directory, configuration = self.create_docker_setup(commands=(add_file_1_command, ))
+        os.mkdir(os.path.join(context_directory, EXAMPLE_FILE_NAME_1))
+        original_checksum = self.checksum_calculator.calculate_checksum(configuration)
+
+        os.mkdir(os.path.join(context_directory, EXAMPLE_FILE_NAME_1, EXAMPLE_FILE_NAME_2))
+        self.assertNotEqual(original_checksum, self.checksum_calculator.calculate_checksum(configuration))
+
+    def test_calculate_checksum_considers_file_permissions(self):
+        add_file_1_command = f"{ADD_DOCKER_COMMAND} {EXAMPLE_FILE_NAME_1} files_1"
+        copy_file_2_command = f"{COPY_DOCKER_COMMAND} {EXAMPLE_FILE_NAME_2} files_2"
+
+        context_directory, configuration = self.create_docker_setup(
+            commands=(add_file_1_command, copy_file_2_command),
+            context_files={EXAMPLE_FILE_NAME_1: EXAMPLE_FILE_CONTENTS_1, EXAMPLE_FILE_NAME_2: EXAMPLE_FILE_NAME_2})
+        original_checksum = self.checksum_calculator.calculate_checksum(configuration)
+
+        os.chmod(os.path.join(context_directory, EXAMPLE_FILE_NAME_1), 0o444)
+        self.assertNotEqual(original_checksum, self.checksum_calculator.calculate_checksum(configuration))
+        os.chmod(os.path.join(context_directory, EXAMPLE_FILE_NAME_1), 0o774)
+        self.assertNotEqual(original_checksum, self.checksum_calculator.calculate_checksum(configuration))
+
+    def test_calculate_checksum_considers_directory_permissions(self):
+        add_file_1_command = f"{ADD_DOCKER_COMMAND} {EXAMPLE_FILE_NAME_1} files_1"
+
+        context_directory, configuration = self.create_docker_setup(commands=(add_file_1_command, ))
+        os.mkdir(os.path.join(context_directory, EXAMPLE_FILE_NAME_1))
+        original_checksum = self.checksum_calculator.calculate_checksum(configuration)
+
+        os.chmod(os.path.join(context_directory, EXAMPLE_FILE_NAME_1), 0o644)
+        self.assertNotEqual(original_checksum, self.checksum_calculator.calculate_checksum(configuration))
+
+    def test_calculate_checksum_considers_file_names(self):
+        add_file_1_command = f"{ADD_DOCKER_COMMAND} {EXAMPLE_FILE_NAME_1} dir_1"
+
+        context_directory, configuration = self.create_docker_setup(commands=(add_file_1_command, ))
+        directory_location = os.path.join(context_directory, EXAMPLE_FILE_NAME_1)
+        os.mkdir(directory_location)
+        original_location = os.path.join(directory_location, EXAMPLE_FILE_NAME_2)
+        Path(original_location).touch()
+        original_checksum = self.checksum_calculator.calculate_checksum(configuration)
+
+        shutil.move(original_location, os.path.join(directory_location, EXAMPLE_FILE_NAME_3))
+        self.assertNotEqual(original_checksum, self.checksum_calculator.calculate_checksum(configuration))
+
+    def test_calculate_no_follow_symlink(self):
+        add_file_1_command = f"{ADD_DOCKER_COMMAND} {EXAMPLE_FILE_NAME_1} dir_1"
+
+        with NamedTemporaryFile("w") as file_outside_context:
+            context_directory, configuration = self.create_docker_setup(commands=(add_file_1_command, ))
+            symlink_location = os.path.join(context_directory, EXAMPLE_FILE_NAME_1)
+            os.symlink(file_outside_context.name, symlink_location)
+
+            original_checksum = self.checksum_calculator.calculate_checksum(configuration)
+
+            file_outside_context.file.write(EXAMPLE_FILE_CONTENTS_1)
+            file_outside_context.file.flush()
+
+            self.assertEqual(original_checksum, self.checksum_calculator.calculate_checksum(configuration))
 
     def _assert_different_checksums(self, configurations: Iterable[DockerBuildConfiguration]):
         """
