@@ -3,7 +3,7 @@ from collections import OrderedDict
 
 from docker import APIClient
 from docker.errors import APIError
-from typing import Generic, TypeVar, Iterable, Set, Dict, Callable, Optional
+from typing import Generic, TypeVar, Iterable, Set, Dict, Callable, Optional, List
 
 from thriftybuilder._logging import create_logger
 from thriftybuilder.build_configurations import DockerBuildConfiguration, BuildConfigurationType, \
@@ -60,11 +60,14 @@ class BuildStepError(BuildFailedError):
     """
     Error raised if error occurs during a build step.
     """
-    def __init__(self, image_name: str, error_message: str, exit_code: Optional[int]):
+    def __init__(self, image_name: str, error_message: str, exit_code: Optional[int], build_logs: List[str]):
         super().__init__(
-            image_name, message=f"Build for {image_name} failed with exit code {exit_code}: {error_message}")
+            image_name,
+            message=f"Build for {image_name} failed with exit code {exit_code}: {error_message}. "
+                    f"Build logs: {build_logs}")
         self.error_message = error_message
         self.exit_code = exit_code
+        self.build_logs = build_logs
 
 
 class Builder(Generic[BuildConfigurationType, BuildResultType, ChecksumCalculatorType],
@@ -241,11 +244,13 @@ class DockerBuilder(Builder[DockerBuildConfiguration, str, DockerChecksumCalcula
         log_generator = self._docker_client.build(path=build_configuration.context, tag=build_configuration.identifier,
                                                   dockerfile=build_configuration.dockerfile_location, decode=True)
 
+        build_logs = []
         log = {}
         try:
             for log in log_generator:
                 details = log.get("stream", "").strip()
                 if len(details) > 0:
+                    build_logs.append(details)
                     logger.debug(details)
         except APIError as e:
             if e.status_code == 400 and "parse error" in e.explanation:
@@ -256,6 +261,7 @@ class DockerBuilder(Builder[DockerBuildConfiguration, str, DockerChecksumCalcula
 
         if "error" in log:
             error_details = log["errorDetail"]
-            raise BuildStepError(build_configuration.name, error_details["message"], error_details.get("code"))
+            raise BuildStepError(build_configuration.name, error_details["message"], error_details.get("code"),
+                                 build_logs)
 
         return build_configuration.identifier
